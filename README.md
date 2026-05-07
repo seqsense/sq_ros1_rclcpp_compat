@@ -4,17 +4,21 @@ Japanese version: [README_ja.md](README_ja.md)
 
 ROS 2 `rclcpp` API shim for ROS 1, plus rclcpp-style headers for common message packages. Lets the same C++ source build on ROS 1 (Noetic) and ROS 2 (Jazzy / Humble) — on ROS 2 the package is intentionally a no-op.
 
-The intended use case is **gradual ROS 1 → ROS 2 migration**: keep nodes building on ROS 1 while the logic layer is rewritten against the ROS 2 API. The shim is consumed by the migration agents in [sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit), but it can also be dropped into any catkin workspace as a standalone package.
+The intended use case is **gradual ROS 1 → ROS 2 migration**: keep nodes building on ROS 1 while the logic layer is rewritten against the ROS 2 API.
+
+[sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) builds on this shim with AI agents that turn existing ROS 1 packages into hybrid packages that build and run on both ROS 1 and ROS 2, plus a Docker environment for building and running them on either side.
 
 ## Hybridization design philosophy
 
 A hybrid C++ package is structured in three layers:
 
-- **Logic layer** — pure C++ written against `rclcpp`. One `.cpp` / `.hpp`, shared between the two builds.
-- **ROS 1 interface wrapper** — written against `roscpp`. Owns Pub/Sub, executor, parameters, lifecycle.
-- **ROS 2 interface wrapper** — written against `rclcpp`. Same role, packaged as a component.
+- **Logic layer** — pure C++ written against `rclcpp`. One `.cpp` / `.hpp` set is shared between the two builds; gtests sit on top of the same source and are shared too.
+- **ROS 1 interface layer** — written against `roscpp`.
+- **ROS 2 interface layer** — written against `rclcpp`.
 
-Pub/Sub APIs, executors, and lifecycle conventions diverge too much between `roscpp` and `rclcpp` to share, so the **interface layer is intentionally written twice**. The logic layer is the only place that shares source between the two builds — and this shim is what makes that practical: it exposes on top of `roscpp` the rclcpp surface the logic layer cannot avoid (`Logger`, `Clock` / `Time`, message types, `RCLCPP_*` macros, throttled logging, ...).
+The node-level interfaces of `roscpp` and `rclcpp` diverge too much to share, so the **interface layer is intentionally written twice**. Only the logic layer is shared, and this shim is what makes that practical: it exposes on top of `roscpp` the rclcpp surface the logic layer cannot avoid (`Logger`, `Clock` / `Time`, message types, `RCLCPP_*` macros, throttled logging, ...).
+
+In practice, once the complex logic has been factored out and pinned down by unit tests, migrating the existing ROS 1 interface to its ROS 2 counterpart tends to be relatively straightforward.
 
 The canonical embodiment is [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) — read its [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) (shared logic) alongside [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) and [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp).
 
@@ -108,7 +112,7 @@ Or use the Docker environment provided by [`sq_ros_hybrid_kit`](https://github.c
 
 ## Scope and limitations
 
-Node implementations targeted by the hybrid pattern are C++ only. Python nodes are out of scope.
+Node implementations targeted by the hybrid pattern are C++ only. Python and other non-C++ languages are out of scope.
 
 ## License
 

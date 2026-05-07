@@ -4,19 +4,24 @@ English version: [README.md](README.md)
 
 ROS 1 上で ROS 2 の `rclcpp` API を使うための shim ライブラリと、よく使うメッセージパッケージの rclcpp スタイルヘッダ群。同じ C++ ソースを ROS 1 (Noetic) と ROS 2 (Jazzy / Humble) の両方でビルドできる (ROS 2 上では意図的に no-op)。
 
-想定ユースケースは **段階的な ROS 1 → ROS 2 移行**: ノードのロジック層を ROS 2 API に書き換えつつ、ROS 1 でもビルドし続けられるようにすること。本リポジトリの shim は [sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) のマイグレーションエージェントが利用することを主目的としているが、catkin ワークスペースへ単体パッケージとして投入することもできる。
+想定ユースケースは **段階的な ROS 1 → ROS 2 移行**: ノードのロジック層を ROS 2 API に書き換えつつ、ROS 1 でもビルドし続けられるようにすること。
+
+[sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) は、本リポジトリの shim を利用して既存の ROS 1 パッケージを ROS 1 / ROS 2 両対応のハイブリッドパッケージへ変換する AI エージェントと、両環境のビルド・実行用 Docker 環境を提供している。
 
 ## ハイブリッド化の設計思想
 
 ハイブリッド C++ パッケージは 3 層で構成する:
 
-- **ロジック層** — `rclcpp` API で書かれた純 C++。`.cpp` / `.hpp` 各 1 セットで、両ビルド間でソースを共有する。
-- **ROS 1 インタフェースラッパ** — `roscpp` で記述。Pub/Sub・executor・パラメータ・ライフサイクルを担当。
-- **ROS 2 インタフェースラッパ** — `rclcpp` で記述。同じ役割を component として実装。
+- **ロジック層** — `rclcpp` API で書かれた純 C++。`.cpp` / `.hpp` 各 1 セットを両ビルド間で共有し、gtest も同様に共通化できる。
+- **ROS 1 インタフェース層** — `roscpp` で記述。
+- **ROS 2 インタフェース層** — `rclcpp` で記述。
 
-Pub/Sub API・executor・ライフサイクル規約は `roscpp` と `rclcpp` で差が大きく共通化に向かないため、**インタフェース層は意図的に二重に書く**。共通化するのはロジック層だけで、その共通化を成立させるのが本 shim — ロジック層が避けて通れない rclcpp サーフェス (`Logger`, `Clock` / `Time`, メッセージ型, `RCLCPP_*` マクロ, throttle ログなど) を `roscpp` の上に提供する。
+`roscpp` と `rclcpp` のノードインタフェースは差異が大きく共通化に向かないため、**インタフェース層は意図的に二重に書く**。共通化するのはロジック層だけで、その共通化を成立させるのが本 shim — ロジック層が避けて通れない rclcpp サーフェス (`Logger`, `Clock` / `Time`, メッセージ型, `RCLCPP_*` マクロ, throttle ログなど) を `roscpp` の上に提供する。
+
+多くの場合、複雑なロジック部分を切り出して単体テストで動作を保証できれば、既存の ROS 1 インタフェース部分を ROS 2 インタフェースへマイグレーションする作業は比較的容易である。
 
 設計の典型例は [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) 配下を参照。共有ロジック [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) と、2 つのインタフェースラッパ [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) / [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp) を読み比べると分かりやすい。
+
 
 ## 提供物
 
@@ -108,7 +113,7 @@ catkin run_tests sq_ros1_rclcpp_compat
 
 ## スコープと制限
 
-ハイブリッドパターンの対象ノードは C++ のみ。Python ノードはスコープ外。
+ハイブリッドパターンの対象ノードは C++ のみ。Python など他言語はスコープ外。
 
 ## ライセンス
 
