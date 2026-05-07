@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="hybrid_package_pubsub_samples" type="pointer_publisher_node" name="pointer_publisher" output="screen" />
+  <node pkg="hybrid_package_pubsub_samples" type="pointer_subscriber_node" name="pointer_subscriber_copy" output="screen" />
+
+  <test test-name="test_copy" pkg="hybrid_package_pubsub_samples" type="test_copy_node" time-limit="30.0" />
+</launch>

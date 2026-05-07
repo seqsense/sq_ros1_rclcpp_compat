@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hybrid_package_pubsub_samples</name>
+  <version>0.0.1</version>
+  <description>Hybrid ROS1/ROS2 pub-sub samples demonstrating zero-copy vs copy</description>
+  <maintainer email="user@example.com">User</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+
+  <depend>hybrid_package_msgs</depend>
+  <depend condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend condition="$ROS_VERSION == 1">ros1_rclcpp_compat</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp_components</depend>
+
+  <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
+  <test_depend condition="$ROS_VERSION == 1">roslaunch</test_depend>
+  <test_depend>gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_pytest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">launch_testing</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">launch_testing_ament_cmake</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">launch_testing_ros</test_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+</package>

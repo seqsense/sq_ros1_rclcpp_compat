@@ -1,0 +1,51 @@
+# CMake function to generate ROS 2-style compatibility headers for ROS 1 messages.
+# Exported via CFG_EXTRAS so it's available to downstream catkin packages.
+#
+# Usage:
+#   find_package(catkin REQUIRED COMPONENTS ros1_rclcpp_compat)
+#   generate_ros1_compat_headers(
+#     PACKAGE my_msgs
+#     MSG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/msg"
+#     OUTPUT_DIR "${CATKIN_DEVEL_PREFIX}/include"
+#   )
+
+function(generate_ros1_compat_headers)
+  cmake_parse_arguments(ARG "" "PACKAGE;MSG_DIR;OUTPUT_DIR" "" ${ARGN})
+
+  if(NOT ARG_PACKAGE)
+    message(FATAL_ERROR "generate_ros1_compat_headers: PACKAGE is required")
+  endif()
+  if(NOT ARG_MSG_DIR)
+    message(FATAL_ERROR "generate_ros1_compat_headers: MSG_DIR is required")
+  endif()
+  if(NOT ARG_OUTPUT_DIR)
+    message(FATAL_ERROR "generate_ros1_compat_headers: OUTPUT_DIR is required")
+  endif()
+
+  # Path embedded at configure time via CFG_EXTRAS .cmake.in template
+  set(_script "@CMAKE_CURRENT_SOURCE_DIR@/cmake/generate_ros1_compat_header.py")
+
+  # Collect message names from .msg files
+  file(GLOB _msg_files RELATIVE "${ARG_MSG_DIR}" "${ARG_MSG_DIR}/*.msg")
+  set(_msg_names "")
+  foreach(_msg_file ${_msg_files})
+    get_filename_component(_msg_name "${_msg_file}" NAME_WE)
+    list(APPEND _msg_names "${_msg_name}")
+  endforeach()
+
+  if(NOT _msg_names)
+    message(WARNING "generate_ros1_compat_headers: no .msg files found in ${ARG_MSG_DIR}")
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" "${_script}"
+      --package "${ARG_PACKAGE}"
+      --output-dir "${ARG_OUTPUT_DIR}"
+      --messages ${_msg_names}
+    RESULT_VARIABLE _result
+  )
+  if(NOT _result EQUAL 0)
+    message(FATAL_ERROR "generate_ros1_compat_headers: script failed with code ${_result}")
+  endif()
+endfunction()

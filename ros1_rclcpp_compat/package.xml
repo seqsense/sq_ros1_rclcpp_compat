@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ros1_rclcpp_compat</name>
+  <version>0.0.1</version>
+  <description>ROS 2 rclcpp API shim for ROS 1 (Logger, Clock, RCLCPP_INFO macros backed by spdlog). No-op on ROS 2.</description>
+  <maintainer email="user@example.com">User</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+
+  <depend condition="$ROS_VERSION == 1">roscpp</depend>
+  <depend condition="$ROS_VERSION == 1">spdlog</depend>
+
+  <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+</package>
