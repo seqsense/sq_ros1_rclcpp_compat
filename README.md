@@ -6,15 +6,43 @@ ROS 2 `rclcpp` API shim for ROS 1, plus rclcpp-style headers for common message 
 
 The intended use case is **gradual ROS 1 → ROS 2 migration**: keep nodes building on ROS 1 while the logic layer is rewritten against the ROS 2 API. The shim is consumed by the migration agents in [sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit), but it can also be dropped into any catkin workspace as a standalone package.
 
+## Hybridization design philosophy
+
+A hybrid C++ package is structured in three layers:
+
+- **Logic layer** — pure C++ written against `rclcpp`. One `.cpp` / `.hpp`, shared between the two builds.
+- **ROS 1 interface wrapper** — written against `roscpp`. Owns Pub/Sub, executor, parameters, lifecycle.
+- **ROS 2 interface wrapper** — written against `rclcpp`. Same role, packaged as a component.
+
+Pub/Sub APIs, executors, and lifecycle conventions diverge too much between `roscpp` and `rclcpp` to share, so the **interface layer is intentionally written twice**. The logic layer is the only place that shares source between the two builds — and this shim is what makes that practical: it exposes on top of `roscpp` the rclcpp surface the logic layer cannot avoid (`Logger`, `Clock` / `Time`, message types, `RCLCPP_*` macros, throttled logging, ...).
+
+The canonical embodiment is [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) — read its [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) (shared logic) alongside [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) and [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp).
+
 ## What's provided
 
-- **`rclcpp` shim** ([sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/)) — `rclcpp::Logger`, `rclcpp::Clock` / `Time` / `Duration`, `rclcpp::Node` (parameter API), and `RCLCPP_DEBUG/INFO/WARN/ERROR` plus their `_THROTTLE` variants. Logging is backed by `spdlog`; throttle uses `std::chrono::steady_clock`.
-- **Auto-generated msg compat headers** — at build time `<pkg>/msg/<Type>.hpp` style headers are generated for `std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`. Add your own message packages via the `generate_ros1_compat_headers()` CMake helper exported by this package.
-- **`tf2_*` ROS 2-style headers** ([tf2_eigen/](sq_ros1_rclcpp_compat/include/tf2_eigen/), [tf2_geometry_msgs/](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/), [tf2_sensor_msgs/](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/)) — let ROS 1 code use the ROS 2 include layout.
-- **`sensor_msgs::PointCloud2Iterator`** ([sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/)) — header-only port of the ROS 2 iterator.
-- **`sq_ros1_rclcpp_compat_gtest_main`** — a static lib that supplies `main()` and calls `ros::Time::init()`, so unit tests can use `rclcpp::Clock(RCL_ROS_TIME).now()` symmetrically across ROS 1 / ROS 2 with no test-side `#ifdef`. Linked transitively via `${catkin_LIBRARIES}` once the test target depends on this package.
+### `rclcpp` shim
 
-On ROS 2 every `<depend>` and feature is gated on `condition="$ROS_VERSION == 1"`, and `ament_package()` is invoked with no targets.
+`rclcpp::Logger`, `rclcpp::Clock` / `Time` / `Duration`, `rclcpp::Node` (parameter API), and `RCLCPP_DEBUG/INFO/WARN/ERROR` plus their `_THROTTLE` variants. Headers live under [sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/). Logging is backed by `spdlog`; throttle uses `std::chrono::steady_clock`.
+
+### ROS 1 / ROS 2 message-header alignment
+
+ROS 2 uses `#include <std_msgs/msg/string.hpp>` and the type `std_msgs::msg::String`; ROS 1 uses `#include <std_msgs/String.h>` and `std_msgs::String`. To let the logic layer use the ROS 2 form on both sides, this package generates a shim header on ROS 1 — at `<pkg>/msg/<snake_case>.hpp` — that includes the ROS 1 header and re-exposes the type as `<pkg>::msg::<CamelCase>` (a struct inheriting from the ROS 1 type, with `SharedPtr` / `ConstSharedPtr` aliased to ROS 1's `Ptr` / `ConstPtr`).
+
+Six standard packages (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) are handled out of the box. For your own message packages, call `generate_ros1_compat_headers()` from your `CMakeLists.txt` — see [`samples/hybrid_package_msgs/`](samples/hybrid_package_msgs/) for the recipe.
+
+### `tf2_*` ROS 2-style headers
+
+[tf2_eigen/](sq_ros1_rclcpp_compat/include/tf2_eigen/), [tf2_geometry_msgs/](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/), [tf2_sensor_msgs/](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/) — let ROS 1 code use the ROS 2 include layout.
+
+### `sensor_msgs::PointCloud2Iterator`
+
+Header-only port of the ROS 2 iterator at [sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/).
+
+### `sq_ros1_rclcpp_compat_gtest_main`
+
+ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is exported through `${catkin_LIBRARIES}`, so any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed. On ROS 2 the shim is unused; `ament_add_gtest` already supplies `gtest_main`.
+
+For a test that links it implicitly, see [`samples/hybrid_imu_analyzer/test/`](samples/hybrid_imu_analyzer/test/) and the ROS 1 branch of its [`CMakeLists.txt`](samples/hybrid_imu_analyzer/CMakeLists.txt).
 
 ## Repository layout
 
@@ -80,9 +108,7 @@ Or use the Docker environment provided by [`sq_ros_hybrid_kit`](https://github.c
 
 ## Scope and limitations
 
-- The shim covers the rclcpp surface that the migration samples actually exercise (logging, parameters, time, common msg types, tf2). It is **not** a complete `rclcpp` reimplementation — services, actions, lifecycle nodes, QoS profiles, and callback groups are intentionally not provided.
-- API additions are welcome; **changing an existing API is not**. Once a signature ships, divergence between the shim and real `rclcpp` undermines the hybrid build premise.
-- Node implementations targeted by the hybrid pattern are C++ only. Python nodes are out of scope.
+Node implementations targeted by the hybrid pattern are C++ only. Python nodes are out of scope.
 
 ## License
 

@@ -6,15 +6,43 @@ ROS 1 上で ROS 2 の `rclcpp` API を使うための shim ライブラリと�
 
 想定ユースケースは **段階的な ROS 1 → ROS 2 移行**: ノードのロジック層を ROS 2 API に書き換えつつ、ROS 1 でもビルドし続けられるようにすること。本リポジトリの shim は [sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) のマイグレーションエージェントが利用することを主目的としているが、catkin ワークスペースへ単体パッケージとして投入することもできる。
 
+## ハイブリッド化の設計思想
+
+ハイブリッド C++ パッケージは 3 層で構成する:
+
+- **ロジック層** — `rclcpp` API で書かれた純 C++。`.cpp` / `.hpp` 各 1 セットで、両ビルド間でソースを共有する。
+- **ROS 1 インタフェースラッパ** — `roscpp` で記述。Pub/Sub・executor・パラメータ・ライフサイクルを担当。
+- **ROS 2 インタフェースラッパ** — `rclcpp` で記述。同じ役割を component として実装。
+
+Pub/Sub API・executor・ライフサイクル規約は `roscpp` と `rclcpp` で差が大きく共通化に向かないため、**インタフェース層は意図的に二重に書く**。共通化するのはロジック層だけで、その共通化を成立させるのが本 shim — ロジック層が避けて通れない rclcpp サーフェス (`Logger`, `Clock` / `Time`, メッセージ型, `RCLCPP_*` マクロ, throttle ログなど) を `roscpp` の上に提供する。
+
+設計の典型例は [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) 配下を参照。共有ロジック [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) と、2 つのインタフェースラッパ [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) / [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp) を読み比べると分かりやすい。
+
 ## 提供物
 
-- **`rclcpp` shim** ([sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/)) — `rclcpp::Logger`、`rclcpp::Clock` / `Time` / `Duration`、`rclcpp::Node` (パラメータ API)、`RCLCPP_DEBUG/INFO/WARN/ERROR` および各 `_THROTTLE` 版。ログ出力は `spdlog`、throttle は `std::chrono::steady_clock` ベース。
-- **メッセージ compat ヘッダの自動生成** — ビルド時に `std_msgs` / `geometry_msgs` / `nav_msgs` / `sensor_msgs` / `visualization_msgs` / `diagnostic_msgs` について `<pkg>/msg/<Type>.hpp` 形式のヘッダを生成。独自パッケージは本パッケージが提供する CMake ヘルパ `generate_ros1_compat_headers()` で追加可能。
-- **`tf2_*` の ROS 2 風ヘッダ** ([tf2_eigen/](sq_ros1_rclcpp_compat/include/tf2_eigen/)、[tf2_geometry_msgs/](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/)、[tf2_sensor_msgs/](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/)) — ROS 1 上で ROS 2 のインクルードレイアウトを利用可能に。
-- **`sensor_msgs::PointCloud2Iterator`** ([sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/)) — ROS 2 のイテレータをヘッダオンリで移植。
-- **`sq_ros1_rclcpp_compat_gtest_main`** — `main()` と `ros::Time::init()` を提供する static ライブラリ。テストコード側で `#ifdef` を書かずに `rclcpp::Clock(RCL_ROS_TIME).now()` を ROS 1 / ROS 2 の両方で対称に使える。テストターゲットが本パッケージに依存していれば `${catkin_LIBRARIES}` 経由で transitive にリンクされる。
+### `rclcpp` shim
 
-ROS 2 側では `<depend>` と機能はすべて `condition="$ROS_VERSION == 1"` でゲートされており、`ament_package()` のみが空ターゲットで呼ばれる。
+`rclcpp::Logger`、`rclcpp::Clock` / `Time` / `Duration`、`rclcpp::Node` (パラメータ API)、および `RCLCPP_DEBUG/INFO/WARN/ERROR` と各 `_THROTTLE` 版。ヘッダは [sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/) 配下。ログ出力は `spdlog`、throttle は `std::chrono::steady_clock` ベース。
+
+### ROS 1 / ROS 2 のメッセージヘッダ整合
+
+ROS 2 では `#include <std_msgs/msg/string.hpp>` で型名 `std_msgs::msg::String` を扱う。ROS 1 では `#include <std_msgs/String.h>` で型名 `std_msgs::String`。同じソースを両ビルドで通すため、本パッケージは ROS 1 ビルド時に compat ヘッダを `<pkg>/msg/<snake_case>.hpp` に自動生成する。生成されたヘッダは ROS 1 の元ヘッダを include した上で、`<pkg>::msg::<CamelCase>` を ROS 1 型を継承した struct として再定義し、`SharedPtr` / `ConstSharedPtr` を ROS 1 の `Ptr` / `ConstPtr` の別名として用意する。
+
+標準パッケージ 6 つ (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) は組込で扱う。独自 msg パッケージは `CMakeLists.txt` から `generate_ros1_compat_headers()` を呼び出して登録する — レシピは [`samples/hybrid_package_msgs/`](samples/hybrid_package_msgs/) を参照。
+
+### `tf2_*` の ROS 2 風ヘッダ
+
+[tf2_eigen/](sq_ros1_rclcpp_compat/include/tf2_eigen/)、[tf2_geometry_msgs/](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/)、[tf2_sensor_msgs/](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/) — ROS 1 上で ROS 2 のインクルードレイアウトをそのまま使えるようにする。
+
+### `sensor_msgs::PointCloud2Iterator`
+
+ROS 2 のイテレータをヘッダオンリで移植したもの。[sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/) 配下。
+
+### `sq_ros1_rclcpp_compat_gtest_main`
+
+ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する — これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。`${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。ROS 2 では `ament_add_gtest` が `gtest_main` を提供するため、本ライブラリは使われない。
+
+利用例: [`samples/hybrid_imu_analyzer/test/`](samples/hybrid_imu_analyzer/test/) と [`CMakeLists.txt`](samples/hybrid_imu_analyzer/CMakeLists.txt) の ROS 1 ブランチを参照。
 
 ## ディレクトリ構成
 
@@ -80,9 +108,7 @@ catkin run_tests sq_ros1_rclcpp_compat
 
 ## スコープと制限
 
-- shim はマイグレーションサンプルが実際に使う rclcpp サーフェスのみ (logging, parameter, time, 標準 msg, tf2) をカバーする。**完全な `rclcpp` 再実装ではない** — services、actions、lifecycle nodes、QoS profile、callback group などは意図的に未提供。
-- **API の追加は歓迎、API の変更は不可**: 一度公開したシグネチャを変更すると、shim と本物の `rclcpp` の差異がハイブリッドビルドの前提を壊す。
-- ハイブリッドパターンの対象ノードは C++ のみ。Python ノードはスコープ外。
+ハイブリッドパターンの対象ノードは C++ のみ。Python ノードはスコープ外。
 
 ## ライセンス
 
