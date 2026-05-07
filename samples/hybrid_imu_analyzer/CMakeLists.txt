@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 if($ENV{ROS_VERSION} EQUAL 1)
   message(STATUS "Building for ROS 1 (Noetic)")
 
-  find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs ros1_rclcpp_compat)
+  find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs sq_ros1_rclcpp_compat)
   catkin_package()
   include_directories(include ${catkin_INCLUDE_DIRS})
 
@@ -28,8 +28,8 @@ if($ENV{ROS_VERSION} EQUAL 1)
 
   if(CATKIN_ENABLE_TESTING)
     catkin_add_gtest(test_imu_analyzer test/src/test_imu_analyzer.cpp)
-    # main() (with ros::Time::init) comes from ros1_rclcpp_compat_gtest_main,
-    # which ros1_rclcpp_compat exports through ${catkin_LIBRARIES} when its
+    # main() (with ros::Time::init) comes from sq_ros1_rclcpp_compat_gtest_main,
+    # which sq_ros1_rclcpp_compat exports through ${catkin_LIBRARIES} when its
     # CATKIN_ENABLE_TESTING is on. catkin_add_gtest does not link gtest_main
     # on its own, so without this we would have to define main() per test.
     target_link_libraries(test_imu_analyzer hybrid_imu_analyzer ${catkin_LIBRARIES})

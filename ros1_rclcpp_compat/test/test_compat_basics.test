@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="test_compat_basics" pkg="ros1_rclcpp_compat" type="test_compat_basics" time-limit="30.0" />
-</launch>

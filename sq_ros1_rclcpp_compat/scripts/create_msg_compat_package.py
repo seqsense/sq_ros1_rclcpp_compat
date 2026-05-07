@@ -3,7 +3,7 @@
 
 Creates a thin hybrid (ROS 1 / ROS 2) catkin/ament package that:
   - ROS 1: generates <pkg>/msg/<snake_case>.hpp compatibility headers
-           using generate_ros1_compat_headers() from ros1_rclcpp_compat
+           using generate_ros1_compat_headers() from sq_ros1_rclcpp_compat
   - ROS 2: no-op ament_cmake package (headers are already provided by rosidl)
 
 Usage:
@@ -20,7 +20,7 @@ project({compat_name})
 if($ENV{{ROS_VERSION}} EQUAL 1)
   message(STATUS "Building {compat_name} for ROS 1")
 
-  find_package(catkin REQUIRED COMPONENTS {msg_package} ros1_rclcpp_compat)
+  find_package(catkin REQUIRED COMPONENTS {msg_package} sq_ros1_rclcpp_compat)
 
   # Generate compat headers into a directory we can export via INCLUDE_DIRS
   set(_COMPAT_INCLUDE_DIR "${{CMAKE_CURRENT_BINARY_DIR}}/compat_include")
@@ -59,7 +59,7 @@ PACKAGE_XML_TEMPLATE = '''\
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <build_depend condition="$ROS_VERSION == 1">{msg_package}</build_depend>
-  <build_depend condition="$ROS_VERSION == 1">ros1_rclcpp_compat</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">sq_ros1_rclcpp_compat</build_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>

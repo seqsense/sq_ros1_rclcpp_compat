@@ -17,8 +17,8 @@
 // On main()
 // ---------
 // ROS 2: ament_add_gtest auto-links gtest_main, no main() needed here.
-// ROS 1: the test links ros1_rclcpp_compat_gtest_main (exported by
-// ros1_rclcpp_compat via ${catkin_LIBRARIES}), which supplies a main()
+// ROS 1: the test links sq_ros1_rclcpp_compat_gtest_main (exported by
+// sq_ros1_rclcpp_compat via ${catkin_LIBRARIES}), which supplies a main()
 // that calls ros::Time::init() before RUN_ALL_TESTS. The test source is
 // therefore free of build-specific preprocessor branches.
 

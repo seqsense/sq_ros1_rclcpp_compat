@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
-project(ros1_rclcpp_compat)
+project(sq_ros1_rclcpp_compat)
 
 if($ENV{ROS_VERSION} EQUAL 1)
-  message(STATUS "Building ros1_rclcpp_compat for ROS 1")
+  message(STATUS "Building sq_ros1_rclcpp_compat for ROS 1")
 
   find_package(catkin REQUIRED COMPONENTS roscpp)
   find_package(spdlog REQUIRED)
@@ -49,7 +49,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
   # a non-existent library when CATKIN_ENABLE_TESTING is off.
   set(_COMPAT_EXPORT_LIBS "")
   if(CATKIN_ENABLE_TESTING)
-    list(APPEND _COMPAT_EXPORT_LIBS ros1_rclcpp_compat_gtest_main)
+    list(APPEND _COMPAT_EXPORT_LIBS sq_ros1_rclcpp_compat_gtest_main)
   endif()
 
   catkin_package(
@@ -75,10 +75,10 @@ if($ENV{ROS_VERSION} EQUAL 1)
     # link this library. It also calls ros::Time::init() so tests can
     # use rclcpp::Clock(RCL_ROS_TIME).now() (compat -> ros::Time::now())
     # without extra setup.
-    add_library(ros1_rclcpp_compat_gtest_main STATIC src/gtest_main.cpp)
-    target_link_libraries(ros1_rclcpp_compat_gtest_main
+    add_library(sq_ros1_rclcpp_compat_gtest_main STATIC src/gtest_main.cpp)
+    target_link_libraries(sq_ros1_rclcpp_compat_gtest_main
                           ${GTEST_LIBRARIES} ${catkin_LIBRARIES})
-    install(TARGETS ros1_rclcpp_compat_gtest_main
+    install(TARGETS sq_ros1_rclcpp_compat_gtest_main
             ARCHIVE DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION})
 
     add_rostest_gtest(test_compat_basics test/test_compat_basics.test test/test_compat_basics.cpp)
@@ -91,7 +91,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
-  message(STATUS "Building ros1_rclcpp_compat for ROS 2 (no-op)")
+  message(STATUS "Building sq_ros1_rclcpp_compat for ROS 2 (no-op)")
 
   find_package(ament_cmake REQUIRED)
   ament_package()

@@ -1,5 +1,5 @@
 /*
- * Unit tests for ros1_rclcpp_compat basic APIs:
+ * Unit tests for sq_ros1_rclcpp_compat basic APIs:
  * Logger, Clock, Time, Duration, logging macros.
  */
 

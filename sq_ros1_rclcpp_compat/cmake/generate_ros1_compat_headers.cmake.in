@@ -2,7 +2,7 @@
 # Exported via CFG_EXTRAS so it's available to downstream catkin packages.
 #
 # Usage:
-#   find_package(catkin REQUIRED COMPONENTS ros1_rclcpp_compat)
+#   find_package(catkin REQUIRED COMPONENTS sq_ros1_rclcpp_compat)
 #   generate_ros1_compat_headers(
 #     PACKAGE my_msgs
 #     MSG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/msg"

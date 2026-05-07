@@ -7,11 +7,11 @@ if($ENV{ROS_VERSION} EQUAL 1)
   message(STATUS "Building for ROS 1 (Noetic)")
 
   find_package(catkin REQUIRED COMPONENTS roscpp hybrid_package_msgs
-                                          ros1_rclcpp_compat)
+                                          sq_ros1_rclcpp_compat)
   catkin_package()
   include_directories(include ${catkin_INCLUDE_DIRS})
 
-  # Common algorithm library (uses rclcpp shim from ros1_rclcpp_compat)
+  # Common algorithm library (uses rclcpp shim from sq_ros1_rclcpp_compat)
   add_library(hybrid_package_common src/pointer_analyzer.cpp)
   target_include_directories(hybrid_package_common PUBLIC include)
   target_link_libraries(hybrid_package_common ${catkin_LIBRARIES})
@@ -40,7 +40,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
     add_dependencies(test_copy_node ${catkin_EXPORTED_TARGETS})
 
     # PointerAnalyzer unit test. main() (with ros::Time::init) comes from
-    # ros1_rclcpp_compat_gtest_main, exported via ${catkin_LIBRARIES}.
+    # sq_ros1_rclcpp_compat_gtest_main, exported via ${catkin_LIBRARIES}.
     catkin_add_gtest(test_pointer_analyzer test/src/test_pointer_analyzer.cpp)
     target_link_libraries(test_pointer_analyzer hybrid_package_common
                           ${catkin_LIBRARIES})

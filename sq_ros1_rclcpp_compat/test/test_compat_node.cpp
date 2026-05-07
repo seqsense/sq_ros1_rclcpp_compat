@@ -1,9 +1,9 @@
 /*
- * Unit tests for ros1_rclcpp_compat rclcpp::Node (parameter API).
+ * Unit tests for sq_ros1_rclcpp_compat rclcpp::Node (parameter API).
  * Verifies that declare_parameter / get_parameter work correctly
  * backed by the ROS1 parameter server.
  *
- * Run via rostest: rostest ros1_rclcpp_compat test_compat_node.test --text
+ * Run via rostest: rostest sq_ros1_rclcpp_compat test_compat_node.test --text
  */
 
 #include <gtest/gtest.h>

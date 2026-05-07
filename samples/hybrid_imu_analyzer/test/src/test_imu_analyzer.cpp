@@ -13,7 +13,7 @@
 //
 // The required main() differs between builds: on ROS 2 ament_add_gtest
 // auto-links gtest_main, so this file needs no main(); on ROS 1 the test
-// links ros1_rclcpp_compat_gtest_main (provided by ros1_rclcpp_compat),
+// links sq_ros1_rclcpp_compat_gtest_main (provided by sq_ros1_rclcpp_compat),
 // which supplies a main() that calls ros::Time::init() before
 // RUN_ALL_TESTS. Either way this source file stays free of build-specific
 // preprocessor branches.

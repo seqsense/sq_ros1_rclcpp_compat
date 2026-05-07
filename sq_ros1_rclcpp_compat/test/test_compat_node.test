@@ -1,5 +1,5 @@
 <launch>
-  <test test-name="test_compat_node" pkg="ros1_rclcpp_compat" type="test_compat_node" time-limit="30.0">
+  <test test-name="test_compat_node" pkg="sq_ros1_rclcpp_compat" type="test_compat_node" time-limit="30.0">
     <param name="test_preloaded" value="99" />
     <rosparam param="test_array">[1.0, 2.0, 3.0]</rosparam>
   </test>

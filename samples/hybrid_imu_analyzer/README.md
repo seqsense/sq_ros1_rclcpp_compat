@@ -6,7 +6,7 @@ Post-migration reference for a single-node C++ package. The pre-migration ROS1-o
 
 - **Logic / interface separation** — `imu_analyzer.{hpp,cpp}` is pure algorithm with an `rclcpp::Logger` injected by constructor; it does not touch Pub/Sub or parameters. The `ros1_*` / `ros2_*` wrappers are the only files that do I/O.
 - **Hybrid build** — `CMakeLists.txt` branches on `$ENV{ROS_VERSION}` (catkin vs. ament_cmake). `package.xml` uses format 3 with `condition="$ROS_VERSION == 1/2"` on every branched dependency.
-- **ROS1 side** — uses `ros1_rclcpp_compat`, the shim that provides ROS2-style (`rclcpp`) API on top of roscpp, so the logic class can be written once against rclcpp and run on both sides.
+- **ROS1 side** — uses `sq_ros1_rclcpp_compat`, the shim that provides ROS2-style (`rclcpp`) API on top of roscpp, so the logic class can be written once against rclcpp and run on both sides.
 - **ROS2 side as a component** — no standalone `main`; the node inherits from `rclcpp::Node`, registers via `RCLCPP_COMPONENTS_REGISTER_NODE`, and is built with `ament_auto_add_library` + `rclcpp_components_register_node(... EXECUTABLE ...)` (the `EXECUTABLE` argument generates a standalone binary too).
 - **Zero Copy intra-process convention** — subscriber callbacks take `const MsgType::ConstSharedPtr &`; publishers publish `std::unique_ptr<MsgType>` via `std::move`. See [`../hybrid_package_pubsub_samples/`](../hybrid_package_pubsub_samples/) for a full pub → sub pipeline across multiple nodes.
 
