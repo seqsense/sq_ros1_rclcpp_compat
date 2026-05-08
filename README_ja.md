@@ -31,9 +31,22 @@ ROS 1 上で ROS 2 の `rclcpp` API を使うための shim ライブラリと�
 
 ### ROS 1 / ROS 2 のメッセージヘッダ整合
 
-ROS 2 では `#include <std_msgs/msg/string.hpp>` で型名 `std_msgs::msg::String` を扱う。ROS 1 では `#include <std_msgs/String.h>` で型名 `std_msgs::String`。同じソースを両ビルドで通すため、本パッケージは ROS 1 ビルド時に compat ヘッダを `<pkg>/msg/<snake_case>.hpp` に自動生成する。生成されたヘッダは ROS 1 の元ヘッダを include した上で、`<pkg>::msg::<CamelCase>` を ROS 1 型を継承した struct として再定義し、`SharedPtr` / `ConstSharedPtr` を ROS 1 の `Ptr` / `ConstPtr` の別名として用意する。
+ROS 2 では `#include <std_msgs/msg/string.hpp>` で型名 `std_msgs::msg::String` を扱う。ROS 1 では `#include <std_msgs/String.h>` で型名 `std_msgs::String`。同じソースを両ビルドで通すため、本パッケージは ROS 1 ビルド時に compat ヘッダを `<pkg>/msg/<snake_case>.hpp` に自動生成する。生成されたヘッダは ROS 1 の元ヘッダを include した上で、`<pkg>::msg::<CamelCase>` を ROS 1 型への using-alias として再公開する。両 namespace は同一の C++ 型を指すので、message-traits・コンテナ要素・pub/sub API は `::msg::` の有無で挙動が変わらない。
+
+ROS 1 generator が出す shared_ptr typedef (`Ptr` / `ConstPtr`、`boost::shared_ptr` ベース) と ROS 2 のもの (`SharedPtr` / `ConstSharedPtr`、`std::shared_ptr` ベース) は **意図的に `::msg::` 配下へ再公開しない** — boost と std は異なる型であり、メンバ typedef で同一視するとビルド毎に shared_ptr のシグネチャが入れ替わって扱いづらくなるため。ハイブリッドのロジック層は shared_ptr 引数を `std::shared_ptr<const T>` で宣言し、ROS 1 インタフェース層側で `sq_ros1_compat::to_std()` を介して `boost::shared_ptr` から変換する規約 (下記参照) — aliasing-constructor によるラップで deep copy はしない。
 
 標準パッケージ 6 つ (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) は組込で扱う。独自 msg パッケージは `CMakeLists.txt` から `generate_ros1_compat_headers()` を呼び出して登録する — レシピは [`samples/hybrid_package_msgs/`](samples/hybrid_package_msgs/) を参照。
+
+### ROS 1 インタフェース境界 helper (`sq_ros1_compat/`)
+
+[sq_ros1_rclcpp_compat/include/sq_ros1_compat/](sq_ros1_rclcpp_compat/include/sq_ros1_compat/) 配下のヘッダは意図的に `rclcpp/` shim ツリーの外側に置かれており、rclcpp サーフェスを一切含まない — ROS 1 native のインタフェースコードから include する想定。
+
+| ヘッダ | 提供物 | 用途 |
+|-------|------|------|
+| `sq_ros1_compat/logger.hpp` | `sq_ros1_compat::get_logger(name)` | ハイブリッド化されたロジッククラスに渡す `rclcpp::Logger` を生成する |
+| `sq_ros1_compat/msg_ptr.hpp` | `sq_ros1_compat::to_std()` / `to_boost()` | `boost::shared_ptr` ⟷ `std::shared_ptr` の変換を IF 境界で行う。各ライブラリの aliasing constructor を使うので deep copy なし |
+
+ハイブリッドパッケージの規約: ROS 1 IF (`ros1_*.cpp`) が include してよいのは `ros/...`、ネイティブ msg ヘッダ (`<msg_pkg>/<Type>.h`)、ロジッククラスのヘッダ、`sq_ros1_compat/*.hpp` のみ。`rclcpp/...` を直接 include しない。ロジック層は IF 側からロガーと `std::shared_ptr<const T>` メッセージを受け取るので、両者は互いに相手の shared_ptr ライブラリを知らずに済む。
 
 ### `tf2_*` の ROS 2 風ヘッダ
 

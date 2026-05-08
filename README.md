@@ -30,9 +30,22 @@ The canonical embodiment is [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_
 
 ### ROS 1 / ROS 2 message-header alignment
 
-ROS 2 uses `#include <std_msgs/msg/string.hpp>` and the type `std_msgs::msg::String`; ROS 1 uses `#include <std_msgs/String.h>` and `std_msgs::String`. To let the logic layer use the ROS 2 form on both sides, this package generates a shim header on ROS 1 — at `<pkg>/msg/<snake_case>.hpp` — that includes the ROS 1 header and re-exposes the type as `<pkg>::msg::<CamelCase>` (a struct inheriting from the ROS 1 type, with `SharedPtr` / `ConstSharedPtr` aliased to ROS 1's `Ptr` / `ConstPtr`).
+ROS 2 uses `#include <std_msgs/msg/string.hpp>` and the type `std_msgs::msg::String`; ROS 1 uses `#include <std_msgs/String.h>` and `std_msgs::String`. To let the logic layer use the ROS 2 form on both sides, this package generates a shim header on ROS 1 — at `<pkg>/msg/<snake_case>.hpp` — that includes the ROS 1 header and re-exposes the type as `<pkg>::msg::<CamelCase>` via a using-alias to the ROS 1 type. The two namespaces refer to exactly the same C++ type, so message-traits, container element types, and pub/sub APIs work identically with or without the `::msg::` segment.
+
+The shared_ptr typedefs the ROS 1 generator emits (`Ptr` / `ConstPtr`, `boost::shared_ptr`-based) and the ROS 2 ones (`SharedPtr` / `ConstSharedPtr`, `std::shared_ptr`-based) are intentionally *not* re-exposed under `::msg::` — the two flavors are different types, and conflating them via member typedefs makes shared_ptr signatures behave inconsistently across builds. Hybrid logic-layer code declares shared_ptr arguments as `std::shared_ptr<const T>`; the ROS 1 IF layer converts from `boost::shared_ptr` via `sq_ros1_compat::to_std()` (see below) — an aliasing-constructor wrap, not a deep copy.
 
 Six standard packages (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) are handled out of the box. For your own message packages, call `generate_ros1_compat_headers()` from your `CMakeLists.txt` — see [`samples/hybrid_package_msgs/`](samples/hybrid_package_msgs/) for the recipe.
+
+### ROS 1 interface boundary helpers (`sq_ros1_compat/`)
+
+Headers under [sq_ros1_rclcpp_compat/include/sq_ros1_compat/](sq_ros1_rclcpp_compat/include/sq_ros1_compat/) sit outside the `rclcpp/` shim tree on purpose: they expose no rclcpp surface and are meant to be included from ROS 1 native interface code.
+
+| Header | Provides | Use |
+|--------|----------|-----|
+| `sq_ros1_compat/logger.hpp` | `sq_ros1_compat::get_logger(name)` | Construct the `rclcpp::Logger` to pass into a hybridized logic class. |
+| `sq_ros1_compat/msg_ptr.hpp` | `sq_ros1_compat::to_std()` / `to_boost()` | Convert between `boost::shared_ptr` and `std::shared_ptr` at the IF boundary using each library's aliasing constructor — no deep copy. |
+
+Convention for hybridized packages: a ROS 1 IF (`ros1_*.cpp`) only includes `ros/...`, the native msg header (`<msg_pkg>/<Type>.h`), the logic class header, and `sq_ros1_compat/*.hpp`. It does not pull in `rclcpp/...` directly. The logic class then receives the logger and `std::shared_ptr<const T>` messages from the IF without either side being aware of the other's shared_ptr library.
 
 ### `tf2_*` ROS 2-style headers
 
