@@ -42,13 +42,15 @@ constexpr double kEpsilon = 1e-9;
 // Build an Imu message with the given quaternion, stamped with the same
 // clock the analyzer uses internally.
 //
-// We construct the SharedPtr from a raw `new` rather than std::make_shared
-// because ROS 1's typedef is boost::shared_ptr while ROS 2's is
-// std::shared_ptr; the raw-pointer ctor is valid for both.
-sensor_msgs::msg::Imu::SharedPtr make_imu_msg(
+// The shared_ptr type is std::shared_ptr<sensor_msgs::msg::Imu> on both
+// builds: the analyzer signature is std::shared_ptr<const T>, and ROS 1
+// builds (where the subscriber callback delivers boost::shared_ptr) use
+// sq_ros1_compat::to_std() at the IF boundary, so the test path itself
+// never sees boost::shared_ptr.
+std::shared_ptr<sensor_msgs::msg::Imu> make_imu_msg(
   double qx, double qy, double qz, double qw)
 {
-  sensor_msgs::msg::Imu::SharedPtr msg(new sensor_msgs::msg::Imu);
+  auto msg = std::make_shared<sensor_msgs::msg::Imu>();
   msg->orientation.x = qx;
   msg->orientation.y = qy;
   msg->orientation.z = qz;

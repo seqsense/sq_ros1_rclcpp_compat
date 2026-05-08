@@ -1,4 +1,8 @@
 #include "ros/ros.h"
+#include "hybrid_package_msgs/StampedPointer.h"
+#include "sq_ros1_compat/logger.hpp"
+#include "sq_ros1_compat/msg_ptr.hpp"
+
 #include "hybrid_package_common/pointer_analyzer.hpp"
 
 int main(int argc, char ** argv)
@@ -7,10 +11,10 @@ int main(int argc, char ** argv)
   ros::NodeHandle nh;
 
   hybrid_package_common::PointerAnalyzer analyzer(
-    rclcpp::get_logger(ros::this_node::getName()));
+    sq_ros1_compat::get_logger(ros::this_node::getName()));
 
   auto callback = [&analyzer](const hybrid_package_msgs::StampedPointer::ConstPtr & msg) {
-      const bool is_zero_copy = analyzer.analyze(msg);
+      const bool is_zero_copy = analyzer.analyze(sq_ros1_compat::to_std(msg));
       ROS_INFO("%s", is_zero_copy ? "RESULT:UNEXPECTED_ZERO_COPY" : "RESULT:COPY_OK");
     };
 

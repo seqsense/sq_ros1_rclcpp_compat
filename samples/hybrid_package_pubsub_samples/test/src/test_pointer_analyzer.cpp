@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <memory>
 
 #include "hybrid_package_msgs/msg/stamped_pointer.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -34,12 +35,14 @@
 namespace
 {
 
-// SharedPtr is boost::shared_ptr on ROS 1 and std::shared_ptr on ROS 2;
-// the raw-pointer ctor accepts both, std::make_shared does not.
-hybrid_package_msgs::msg::StampedPointer::SharedPtr make_msg()
+// The hybrid logic class accepts std::shared_ptr<const T>, so the test
+// path uses std::shared_ptr on both builds. ROS 1 callbacks deliver
+// boost::shared_ptr at run time, but the IF layer converts via
+// sq_ros1_compat::to_std() before reaching analyze() — none of that
+// surfaces in this gtest, which calls analyze() directly.
+std::shared_ptr<hybrid_package_msgs::msg::StampedPointer> make_msg()
 {
-  hybrid_package_msgs::msg::StampedPointer::SharedPtr msg(
-    new hybrid_package_msgs::msg::StampedPointer);
+  auto msg = std::make_shared<hybrid_package_msgs::msg::StampedPointer>();
   msg->header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
   return msg;
 }

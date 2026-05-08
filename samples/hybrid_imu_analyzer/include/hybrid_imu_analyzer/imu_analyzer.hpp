@@ -1,6 +1,8 @@
 #ifndef HYBRID_IMU_ANALYZER__IMU_ANALYZER_HPP_
 #define HYBRID_IMU_ANALYZER__IMU_ANALYZER_HPP_
 
+#include <memory>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 
@@ -21,7 +23,7 @@ public:
 
   /// Analyze IMU message: compute RPY from quaternion, log latency.
   /// Returns the computed roll/pitch/yaw.
-  Rpy analyze(const sensor_msgs::msg::Imu::ConstSharedPtr & msg);
+  Rpy analyze(const std::shared_ptr<const sensor_msgs::msg::Imu> & msg);
 
 private:
   rclcpp::Logger logger_;

@@ -8,7 +8,7 @@ namespace hybrid_imu_analyzer
 ImuAnalyzer::ImuAnalyzer(const rclcpp::Logger & logger)
 : logger_(logger) {}
 
-Rpy ImuAnalyzer::analyze(const sensor_msgs::msg::Imu::ConstSharedPtr & msg)
+Rpy ImuAnalyzer::analyze(const std::shared_ptr<const sensor_msgs::msg::Imu> & msg)
 {
   // Quaternion to RPY (ZYX Euler angles)
   const double qx = msg->orientation.x;

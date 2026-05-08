@@ -7,7 +7,7 @@ PointerAnalyzer::PointerAnalyzer(const rclcpp::Logger & logger)
 : logger_(logger) {}
 
 bool PointerAnalyzer::analyze(
-  const hybrid_package_msgs::msg::StampedPointer::ConstSharedPtr & msg)
+  const std::shared_ptr<const hybrid_package_msgs::msg::StampedPointer> & msg)
 {
   const double time_diff_sec =
     (rclcpp::Clock(RCL_ROS_TIME).now() - msg->header.stamp).seconds();
