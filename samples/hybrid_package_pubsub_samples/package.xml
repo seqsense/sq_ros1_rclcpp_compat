@@ -4,7 +4,7 @@
   <name>hybrid_package_pubsub_samples</name>
   <version>0.0.1</version>
   <description>Hybrid ROS1/ROS2 pub-sub samples demonstrating zero-copy vs copy</description>
-  <maintainer email="user@example.com">User</maintainer>
+  <maintainer email="nhatao@seqsense.com">Naotaka Hatao</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>

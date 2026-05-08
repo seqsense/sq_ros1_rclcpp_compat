@@ -5,7 +5,7 @@
   <name>hybrid_imu_analyzer</name>
   <version>0.0.1</version>
   <description>Hybrid ROS 1/ROS 2 IMU analyzer sample using compat libraries</description>
-  <maintainer email="user@example.com">User</maintainer>
+  <maintainer email="nhatao@seqsense.com">Naotaka Hatao</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
