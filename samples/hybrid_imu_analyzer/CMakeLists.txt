@@ -60,7 +60,7 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
     ament_target_dependencies(test_imu_analyzer rclcpp sensor_msgs)
   endif()
 
-  ament_auto_package(INSTALL_TO_SHARE launch)
+  ament_auto_package()
 
 else()
   message(
