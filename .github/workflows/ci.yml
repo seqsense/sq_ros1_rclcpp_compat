@@ -97,7 +97,7 @@ jobs:
               rosdep update --include-eol-distros
               sudo apt-get update -q
               rosdep install --from-paths /opt/sq-kit/ros2_workspace/src \
-                --ignore-src -r -y
+                --ignore-src -r -y --include-eol-distros
               source /opt/ros/$ROS_DISTRO/setup.bash
               cd /opt/sq-kit/ros2_workspace
               colcon build
