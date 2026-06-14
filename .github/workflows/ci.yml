@@ -63,75 +63,45 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.ros_version }}-${{ matrix.distro }}
           cache-to: type=gha,scope=${{ matrix.ros_version }}-${{ matrix.distro }},mode=max
 
-      - name: Install ROS dependencies
-        run: |
-          if [ "${{ matrix.ros_version }}" = ros1 ]; then
-            WS=workspace/src
-            EXTRA=--include-eol-distros
-          else
-            WS=ros2_workspace/src
-            EXTRA=
-          fi
-          docker run --rm -u 0 \
-            -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
-            ros-ci:${{ matrix.distro }} \
-            bash -c "
-              rosdep init 2>/dev/null || true
-              rosdep update --include-eol-distros
-              apt-get update -q
-              rosdep install --from-paths /opt/sq-kit/$WS --ignore-src -r -y $EXTRA
-            "
-
-      - name: Build (ROS1)
+      - name: Build and test (ROS1)
         if: matrix.ros_version == 'ros1'
         run: |
-          docker run --rm -u 0 \
+          docker run --rm \
             -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
             ros-ci:${{ matrix.distro }} \
             bash -c '
+              set -e
+              rosdep update --include-eol-distros
+              sudo apt-get update -q
+              rosdep install --from-paths /opt/sq-kit/workspace/src \
+                --ignore-src -r -y --include-eol-distros
               source /opt/ros/$ROS_DISTRO/setup.bash
               cd /opt/sq-kit/workspace
               catkin init || true
               catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
               catkin build
+              source /opt/sq-kit/workspace/devel/setup.bash
+              export ROS_HOSTNAME=localhost ROS_MASTER_URI=http://localhost:11311
+              catkin run_tests
+              catkin_test_results
             '
 
-      - name: Build (ROS2)
+      - name: Build and test (ROS2)
         if: matrix.ros_version == 'ros2'
         run: |
-          docker run --rm -u 0 \
+          docker run --rm \
             -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
             ros-ci:${{ matrix.distro }} \
             bash -c '
+              set -e
+              rosdep update --include-eol-distros
+              sudo apt-get update -q
+              rosdep install --from-paths /opt/sq-kit/ros2_workspace/src \
+                --ignore-src -r -y
               source /opt/ros/$ROS_DISTRO/setup.bash
               cd /opt/sq-kit/ros2_workspace
               colcon build
-            '
-
-      - name: Test (ROS1)
-        if: matrix.ros_version == 'ros1'
-        run: |
-          docker run --rm -u 0 \
-            -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
-            ros-ci:${{ matrix.distro }} \
-            bash -c '
-              source /opt/ros/$ROS_DISTRO/setup.bash
-              source /opt/sq-kit/workspace/devel/setup.bash
-              export ROS_HOSTNAME=localhost ROS_MASTER_URI=http://localhost:11311
-              cd /opt/sq-kit/workspace
-              catkin run_tests && catkin_test_results
-            '
-
-      - name: Test (ROS2)
-        if: matrix.ros_version == 'ros2'
-        run: |
-          docker run --rm -u 0 \
-            -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
-            ros-ci:${{ matrix.distro }} \
-            bash -c '
-              source /opt/ros/$ROS_DISTRO/setup.bash
               source /opt/sq-kit/ros2_workspace/install/setup.bash
-              cd /opt/sq-kit/ros2_workspace
               colcon test --event-handlers console_cohesion+ console_direct+
               colcon test-result --verbose
             '
