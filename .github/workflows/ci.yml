@@ -71,6 +71,7 @@ jobs:
             ros-ci:${{ matrix.distro }} \
             bash -c '
               set -e
+              sudo rosdep init 2>/dev/null || true
               rosdep update --include-eol-distros
               sudo apt-get update -q
               rosdep install --from-paths /opt/sq-kit/workspace/src \
@@ -94,6 +95,7 @@ jobs:
             ros-ci:${{ matrix.distro }} \
             bash -c '
               set -e
+              sudo rosdep init 2>/dev/null || true
               rosdep update --include-eol-distros
               sudo apt-get update -q
               rosdep install --from-paths /opt/sq-kit/ros2_workspace/src \
