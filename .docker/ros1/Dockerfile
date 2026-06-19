@@ -34,41 +34,41 @@ RUN rosdep init \
 # ─── Active base: selected by ROS1_DISTRO build arg ──────────────────────────
 FROM stage_${ROS1_DISTRO}
 
-ARG USER_NAME=dev
-ARG USER_UID=1000
-ARG USER_GID=1000
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
-    sudo \
-    vim \
     less \
-    python3-pip \
+    libeigen3-dev \
+    libspdlog-dev \
     python3-catkin-tools \
-    python3-rosdep \
     python3-osrf-pycommon \
-    ros-${ROS_DISTRO}-rostest \
-    ros-${ROS_DISTRO}-roslint \
-    ros-${ROS_DISTRO}-std-msgs \
-    ros-${ROS_DISTRO}-sensor-msgs \
-    ros-${ROS_DISTRO}-geometry-msgs \
-    ros-${ROS_DISTRO}-nav-msgs \
-    ros-${ROS_DISTRO}-visualization-msgs \
+    python3-pip \
+    python3-rosdep \
     ros-${ROS_DISTRO}-diagnostic-msgs \
-    ros-${ROS_DISTRO}-tf2 \
-    ros-${ROS_DISTRO}-tf2-ros \
-    ros-${ROS_DISTRO}-tf2-geometry-msgs \
-    ros-${ROS_DISTRO}-tf2-eigen \
-    ros-${ROS_DISTRO}-tf2-sensor-msgs \
+    ros-${ROS_DISTRO}-geometry-msgs \
     ros-${ROS_DISTRO}-message-generation \
     ros-${ROS_DISTRO}-message-runtime \
-    libspdlog-dev \
-    libeigen3-dev \
+    ros-${ROS_DISTRO}-nav-msgs \
+    ros-${ROS_DISTRO}-roslint \
+    ros-${ROS_DISTRO}-rostest \
+    ros-${ROS_DISTRO}-sensor-msgs \
+    ros-${ROS_DISTRO}-std-msgs \
+    ros-${ROS_DISTRO}-tf2 \
+    ros-${ROS_DISTRO}-tf2-eigen \
+    ros-${ROS_DISTRO}-tf2-geometry-msgs \
+    ros-${ROS_DISTRO}-tf2-ros \
+    ros-${ROS_DISTRO}-tf2-sensor-msgs \
+    ros-${ROS_DISTRO}-visualization-msgs \
+    sudo \
+    vim \
  && rm -rf /var/lib/apt/lists/*
+
+ARG USER_NAME=dev
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 RUN if getent passwd ${USER_UID} > /dev/null; then \
       EXISTING_USER=$(getent passwd ${USER_UID} | cut -d: -f1); \
@@ -93,4 +93,4 @@ USER ${USER_NAME}
 WORKDIR /opt/sq-kit/workspace
 ENV SHELL=/bin/bash
 
-CMD ["bash", "-c", "tail -f /dev/null"]
+CMD ["sleep", "infinity"]
