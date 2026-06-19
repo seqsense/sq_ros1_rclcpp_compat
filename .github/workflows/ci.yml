@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ROS 1
+          - distro: noetic
+            ros_version: ros1
+            ros1_distro: noetic
+          - distro: one
+            ros_version: ros1
+            ros1_distro: one
+          # ROS 2
+          - distro: humble
+            ros_version: ros2
+            ros2_distro: humble
+          - distro: jazzy
+            ros_version: ros2
+            ros2_distro: jazzy
+
+    name: ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create workspace symlinks
+        run: |
+          mkdir -p workspace/src ros2_workspace/src
+          cd workspace/src
+          ln -s ../../sq_ros1_rclcpp_compat sq_ros1_rclcpp_compat
+          for pkg in hybrid_imu_analyzer hybrid_package_msgs hybrid_package_pubsub_samples; do
+            ln -s ../../samples/$pkg $pkg
+          done
+          cd "$GITHUB_WORKSPACE/ros2_workspace/src"
+          for pkg in sq_ros1_rclcpp_compat hybrid_imu_analyzer hybrid_package_msgs hybrid_package_pubsub_samples; do
+            ln -s ../../workspace/src/$pkg $pkg
+          done
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/${{ matrix.ros_version }}/Dockerfile
+          build-args: |
+            ROS1_DISTRO=${{ matrix.ros1_distro || 'noetic' }}
+            ROS2_DISTRO=${{ matrix.ros2_distro || 'jazzy' }}
+            USER_UID=1001
+            USER_GID=1001
+          tags: ros-ci:${{ matrix.distro }}
+          load: true
+          cache-from: type=gha,scope=${{ matrix.ros_version }}-${{ matrix.distro }}
+          cache-to: type=gha,scope=${{ matrix.ros_version }}-${{ matrix.distro }},mode=max
+
+      - name: Build and test (ROS1)
+        if: matrix.ros_version == 'ros1'
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
+            ros-ci:${{ matrix.distro }} \
+            bash -c '
+              set -e
+              sudo rosdep init 2>/dev/null || true
+              rosdep update --include-eol-distros
+              sudo apt-get update -q
+              rosdep install --from-paths /opt/sq-kit/workspace/src \
+                --ignore-src -r -y --include-eol-distros
+              source /opt/ros/$ROS_DISTRO/setup.bash
+              cd /opt/sq-kit/workspace
+              catkin init || true
+              catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+              catkin build
+              source /opt/sq-kit/workspace/devel/setup.bash
+              export ROS_HOSTNAME=localhost ROS_MASTER_URI=http://localhost:11311 COLUMNS=200
+              catkin run_tests
+              catkin_test_results
+            '
+
+      - name: Build and test (ROS2)
+        if: matrix.ros_version == 'ros2'
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/opt/sq-kit" \
+            ros-ci:${{ matrix.distro }} \
+            bash -c '
+              set -e
+              sudo rosdep init 2>/dev/null || true
+              rosdep update --include-eol-distros
+              sudo apt-get update -q
+              rosdep install --from-paths /opt/sq-kit/ros2_workspace/src \
+                --ignore-src -r -y
+              source /opt/ros/$ROS_DISTRO/setup.bash
+              cd /opt/sq-kit/ros2_workspace
+              colcon build
+              source /opt/sq-kit/ros2_workspace/install/setup.bash
+              colcon test --event-handlers console_cohesion+ console_direct+
+              colcon test-result --verbose
+            '
