@@ -11,19 +11,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # ROS 1
           - distro: noetic
             ros_version: ros1
             ros1_distro: noetic
+            ros2_distro: jazzy
           - distro: one
             ros_version: ros1
             ros1_distro: one
-          # ROS 2
+            ros2_distro: jazzy
           - distro: humble
             ros_version: ros2
+            ros1_distro: noetic
             ros2_distro: humble
           - distro: jazzy
             ros_version: ros2
+            ros1_distro: noetic
             ros2_distro: jazzy
 
     name: ${{ matrix.distro }}
@@ -52,8 +54,8 @@ jobs:
           context: .
           file: .docker/${{ matrix.ros_version }}/Dockerfile
           build-args: |
-            ROS1_DISTRO=${{ matrix.ros1_distro || 'noetic' }}
-            ROS2_DISTRO=${{ matrix.ros2_distro || 'jazzy' }}
+            ROS1_DISTRO=${{ matrix.ros1_distro }}
+            ROS2_DISTRO=${{ matrix.ros2_distro }}
             USER_UID=1001
             USER_GID=1001
           tags: ros-ci:${{ matrix.distro }}
