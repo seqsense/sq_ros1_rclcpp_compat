@@ -71,7 +71,7 @@ ARG USER_UID=1000
 ARG USER_GID=1000
 
 COPY .docker/setup_user.sh /tmp/setup_user.sh
-RUN /tmp/setup_user.sh && rm /tmp/setup_user.sh
+RUN bash /tmp/setup_user.sh && rm /tmp/setup_user.sh
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/${USER_NAME}/.bashrc \
  && echo '[ -f /opt/sq-kit/workspace/devel/setup.bash ] && source /opt/sq-kit/workspace/devel/setup.bash' >> /home/${USER_NAME}/.bashrc
