@@ -93,4 +93,4 @@ USER ${USER_NAME}
 WORKDIR /opt/sq-kit/workspace
 ENV SHELL=/bin/bash
 
-CMD ["sleep", "infinity"]
+CMD ["bash", "-c", "tail -f /dev/null"]

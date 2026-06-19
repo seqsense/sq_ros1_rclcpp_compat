@@ -68,4 +68,4 @@ USER ${USER_NAME}
 WORKDIR /opt/sq-kit/ros2_workspace
 ENV SHELL=/bin/bash
 
-CMD ["sleep", "infinity"]
+CMD ["bash", "-c", "tail -f /dev/null"]
