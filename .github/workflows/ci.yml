@@ -80,7 +80,7 @@ jobs:
               catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
               catkin build
               source /opt/sq-kit/workspace/devel/setup.bash
-              export ROS_HOSTNAME=localhost ROS_MASTER_URI=http://localhost:11311
+              export ROS_HOSTNAME=localhost ROS_MASTER_URI=http://localhost:11311 COLUMNS=200
               catkin run_tests
               catkin_test_results
             '
