@@ -1,16 +1,25 @@
+// Copyright 2026 SEQSENSE, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef ROS1_COMPAT__RCLCPP__RCLCPP_HPP_
 #define ROS1_COMPAT__RCLCPP__RCLCPP_HPP_
 
-// ROS 1 shim for rclcpp
-// Provides: rclcpp::Logger, rclcpp::Clock, RCLCPP_INFO/WARN/ERROR
-// Backend: spdlog (logging), ros::Time (clock)
-//
-// In ROS 1 builds, this file is found via include path priority.
-// In ROS 2 builds, the real rclcpp/rclcpp.hpp is used instead.
+// On ROS 1, found via include path priority; on ROS 2 the real rclcpp/rclcpp.hpp takes precedence.
 
+#include "rclcpp/clock.hpp"
 #include "rclcpp/logger.hpp"
 #include "rclcpp/logging.hpp"
-#include "rclcpp/clock.hpp"
 #include "rclcpp/node.hpp"
 
 #endif  // ROS1_COMPAT__RCLCPP__RCLCPP_HPP_

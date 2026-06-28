@@ -1,36 +1,30 @@
-// Unit tests for hybrid_imu_analyzer::ImuAnalyzer.
+// Copyright 2026 SEQSENSE, Inc.
 //
-// On now() in unit tests
-// ----------------------
-// ImuAnalyzer::analyze(msg) calls rclcpp::Clock(RCL_ROS_TIME).now() inside
-// to compute the message latency. The test cannot control that clock, so
-// the latency is wall-clock dependent and is deliberately NOT asserted.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// To keep the internal subtraction well defined (small, non-negative), we
-// stamp the message with the same clock right before calling analyze().
-// Tests then check only the deterministic conversion math (quaternion ->
-// roll/pitch/yaw).
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// The required main() differs between builds: on ROS 2 ament_add_gtest
-// auto-links gtest_main, so this file needs no main(); on ROS 1 the test
-// links sq_ros1_rclcpp_compat_gtest_main (provided by sq_ros1_rclcpp_compat),
-// which supplies a main() that calls ros::Time::init() before
-// RUN_ALL_TESTS. Either way this source file stays free of build-specific
-// preprocessor branches.
-//
-// If a future test needs a *deterministic* latency value, the right move
-// is to make the clock injectable on ImuAnalyzer (constructor takes a
-// rclcpp::Clock::SharedPtr) or to extend the analyze() signature to take
-// `now` as an argument. We keep the sample API minimal here on purpose;
-// the test focuses on the math that benefits from gtest coverage.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#include "hybrid_imu_analyzer/imu_analyzer.hpp"
+// On now(): analyze() calls Clock(RCL_ROS_TIME).now() for latency; latency is logged but not
+// asserted. Messages are stamped with the same clock just before analyze() to keep the
+// subtraction well defined.
+//
+// On main(): ROS 2 ament_add_gtest links gtest_main automatically; ROS 1 tests link
+// sq_ros1_rclcpp_compat_gtest_main (calls ros::Time::init()). No build-specific #ifdefs here.
 
 #include <gtest/gtest.h>
 
 #include <cmath>
 #include <memory>
 
+#include "hybrid_imu_analyzer/imu_analyzer.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 
@@ -39,16 +33,7 @@ namespace
 
 constexpr double kEpsilon = 1e-9;
 
-// Build an Imu message with the given quaternion, stamped with the same
-// clock the analyzer uses internally.
-//
-// The shared_ptr type is std::shared_ptr<sensor_msgs::msg::Imu> on both
-// builds: the analyzer signature is std::shared_ptr<const T>, and ROS 1
-// builds (where the subscriber callback delivers boost::shared_ptr) use
-// sq_ros1_compat::to_std() at the IF boundary, so the test path itself
-// never sees boost::shared_ptr.
-std::shared_ptr<sensor_msgs::msg::Imu> make_imu_msg(
-  double qx, double qy, double qz, double qw)
+std::shared_ptr<sensor_msgs::msg::Imu> make_imu_msg(double qx, double qy, double qz, double qw)
 {
   auto msg = std::make_shared<sensor_msgs::msg::Imu>();
   msg->orientation.x = qx;
@@ -64,8 +49,7 @@ std::shared_ptr<sensor_msgs::msg::Imu> make_imu_msg(
 class ImuAnalyzerTest : public ::testing::Test
 {
 protected:
-  hybrid_imu_analyzer::ImuAnalyzer analyzer_{
-    rclcpp::get_logger("imu_analyzer_test")};
+  hybrid_imu_analyzer::ImuAnalyzer analyzer_{rclcpp::get_logger("imu_analyzer_test")};
 };
 
 TEST_F(ImuAnalyzerTest, IdentityQuaternionGivesZeroRpy)

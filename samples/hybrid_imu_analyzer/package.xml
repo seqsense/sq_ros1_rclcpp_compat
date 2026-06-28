@@ -5,7 +5,7 @@
   <name>hybrid_imu_analyzer</name>
   <version>0.0.1</version>
   <description>Hybrid ROS 1/ROS 2 IMU analyzer sample using compat libraries</description>
-  <maintainer email="nhatao@seqsense.com">Naotaka Hatao</maintainer>
+  <maintainer email="hatao.jsk@gmail.com">Naotaka Hatao</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
@@ -19,6 +19,9 @@
   <depend condition="$ROS_VERSION == 2">rclcpp_components</depend>
 
   <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_clang_format</test_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>

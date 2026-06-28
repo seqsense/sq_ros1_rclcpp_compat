@@ -47,13 +47,17 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
 
   # ROS 2 component node
   ament_auto_add_library(imu_analyzer_node SHARED
-                         src/ros2_imu_analyzer_node.cpp)
+    src/ros2_imu_analyzer_node.cpp)
   target_link_libraries(imu_analyzer_node hybrid_imu_analyzer)
   rclcpp_components_register_node(
     imu_analyzer_node PLUGIN "hybrid_imu_analyzer::ImuAnalyzerNode" EXECUTABLE
     imu_analyzer_node_exec)
 
   if(BUILD_TESTING)
+    find_package(ament_lint_auto REQUIRED)
+    list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_uncrustify)
+    ament_lint_auto_find_test_dependencies()
+
     find_package(ament_cmake_gtest REQUIRED)
     ament_add_gtest(test_imu_analyzer test/src/test_imu_analyzer.cpp)
     target_link_libraries(test_imu_analyzer hybrid_imu_analyzer)
