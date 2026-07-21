@@ -17,6 +17,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <chrono>
 #include <cstdio>
 
 #include "rclcpp/logger.hpp"
