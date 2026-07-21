@@ -76,6 +76,13 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
   if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_uncrustify)
+    # clang-format ships a different bundled .clang-format per distro (humble
+    # lacks "AfterEnum: true"), so the same source cannot satisfy every distro's
+    # formatter. Formatting is a style-only check, so run it on jazzy (the
+    # source of truth) and skip it on humble.
+    if("$ENV{ROS_DISTRO}" STREQUAL "humble")
+      list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_clang_format)
+    endif()
     ament_lint_auto_find_test_dependencies()
 
     find_package(ament_cmake_gtest REQUIRED)
