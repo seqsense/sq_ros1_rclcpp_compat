@@ -13,9 +13,9 @@
 // limitations under the License.
 
 // ROS 1 compat wrapper for <sensor_msgs/point_cloud2_iterator.hpp>.
-#ifndef ROS1_COMPAT__SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_
-#define ROS1_COMPAT__SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_
+#ifndef SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_
+#define SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_
 
 #include <sensor_msgs/point_cloud2_iterator.h>
 
-#endif  // ROS1_COMPAT__SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_
+#endif  // SENSOR_MSGS__POINT_CLOUD2_ITERATOR_HPP_

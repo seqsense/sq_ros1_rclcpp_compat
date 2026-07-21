@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROS1_COMPAT__RCLCPP__LOGGER_HPP_
-#define ROS1_COMPAT__RCLCPP__LOGGER_HPP_
+#ifndef RCLCPP__LOGGER_HPP_
+#define RCLCPP__LOGGER_HPP_
 
 #include <spdlog/spdlog.h>
 
@@ -44,4 +44,4 @@ inline Logger get_logger(const std::string & name) { return Logger(name); }
 
 }  // namespace rclcpp
 
-#endif  // ROS1_COMPAT__RCLCPP__LOGGER_HPP_
+#endif  // RCLCPP__LOGGER_HPP_

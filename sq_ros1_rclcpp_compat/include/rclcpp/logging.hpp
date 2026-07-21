@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROS1_COMPAT__RCLCPP__LOGGING_HPP_
-#define ROS1_COMPAT__RCLCPP__LOGGING_HPP_
+#ifndef RCLCPP__LOGGING_HPP_
+#define RCLCPP__LOGGING_HPP_
 
 #include <spdlog/spdlog.h>
 
@@ -103,4 +103,4 @@
     }                                                                               \
   } while (0)
 
-#endif  // ROS1_COMPAT__RCLCPP__LOGGING_HPP_
+#endif  // RCLCPP__LOGGING_HPP_

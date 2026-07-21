@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROS1_COMPAT__RCLCPP__NODE_HPP_
-#define ROS1_COMPAT__RCLCPP__NODE_HPP_
+#ifndef RCLCPP__NODE_HPP_
+#define RCLCPP__NODE_HPP_
 
 #include <ros/ros.h>
 
@@ -227,4 +227,4 @@ private:
 
 }  // namespace rclcpp
 
-#endif  // ROS1_COMPAT__RCLCPP__NODE_HPP_
+#endif  // RCLCPP__NODE_HPP_

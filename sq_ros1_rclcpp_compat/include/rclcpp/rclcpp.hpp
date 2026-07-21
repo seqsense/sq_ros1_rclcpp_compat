@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROS1_COMPAT__RCLCPP__RCLCPP_HPP_
-#define ROS1_COMPAT__RCLCPP__RCLCPP_HPP_
+#ifndef RCLCPP__RCLCPP_HPP_
+#define RCLCPP__RCLCPP_HPP_
 
 // On ROS 1, found via include path priority; on ROS 2 the real rclcpp/rclcpp.hpp takes precedence.
 
@@ -22,4 +22,4 @@
 #include "rclcpp/logging.hpp"
 #include "rclcpp/node.hpp"
 
-#endif  // ROS1_COMPAT__RCLCPP__RCLCPP_HPP_
+#endif  // RCLCPP__RCLCPP_HPP_
