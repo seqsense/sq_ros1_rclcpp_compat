@@ -24,7 +24,14 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
   find_package(std_msgs REQUIRED)
 
   rosidl_generate_interfaces(${PROJECT_NAME} "msg/StampedPointer.msg"
-                             DEPENDENCIES std_msgs)
+    DEPENDENCIES std_msgs)
+
+  if(BUILD_TESTING)
+    find_package(ament_lint_auto REQUIRED)
+    list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_uncrustify)
+    ament_lint_auto_find_test_dependencies()
+  endif()
+
   ament_package()
 
 else()

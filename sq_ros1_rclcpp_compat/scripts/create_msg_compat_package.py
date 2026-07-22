@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
-"""Generate a ROS 2-style message compatibility package for a ROS 1 message package.
+# Copyright 2026 SEQSENSE, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Generate a ROS 2-style message compatibility package for a ROS 1 message package.
 
 Creates a thin hybrid (ROS 1 / ROS 2) catkin/ament package that:
   - ROS 1: generates <pkg>/msg/<snake_case>.hpp compatibility headers
@@ -13,7 +27,7 @@ Usage:
 import argparse
 import os
 
-CMAKELISTS_TEMPLATE = '''\
+CMAKELISTS_TEMPLATE = """\
 cmake_minimum_required(VERSION 3.5)
 project({compat_name})
 
@@ -41,16 +55,18 @@ elseif($ENV{{ROS_VERSION}} EQUAL 2)
 else()
   message(FATAL_ERROR "ROS_VERSION environment variable not set or unsupported.")
 endif()
-'''
+"""
 
-PACKAGE_XML_TEMPLATE = '''\
+PACKAGE_XML_TEMPLATE = """\
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd"
             schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>{compat_name}</name>
   <version>0.0.1</version>
-  <description>ROS 2-style compatibility headers for {msg_package} on ROS 1. No-op on ROS 2.</description>
+  <description>
+    ROS 2-style compatibility headers for {msg_package} on ROS 1. No-op on ROS 2.
+  </description>
   <maintainer email="user@example.com">User</maintainer>
   <license>Apache-2.0</license>
 
@@ -65,7 +81,7 @@ PACKAGE_XML_TEMPLATE = '''\
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
   </export>
 </package>
-'''
+"""
 
 
 def create_package(msg_package: str, output_dir: str) -> str:

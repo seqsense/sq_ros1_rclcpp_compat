@@ -1,45 +1,35 @@
-// Unit tests for hybrid_package_common::PointerAnalyzer.
+// Copyright 2026 SEQSENSE, Inc.
 //
-// PointerAnalyzer::analyze(msg) compares msg->pointer_value (stored by the
-// publisher before move-publish) with reinterpret_cast<uint64_t>(msg.get())
-// (the pointer the subscriber actually received). When intra-process zero-
-// copy is in effect the two addresses match; with copy-mode delivery they
-// don't. These tests poke pointer_value directly to exercise both paths
-// without bringing up a publisher.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// On now()
-// --------
-// analyze() also computes a wall-clock time_diff via
-// rclcpp::Clock(RCL_ROS_TIME).now() - msg->header.stamp. We stamp the msg
-// with the same clock just before calling analyze() so the subtraction is
-// well defined; the time_diff value itself is logged but not asserted.
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// On main()
-// ---------
-// ROS 2: ament_add_gtest auto-links gtest_main, no main() needed here.
-// ROS 1: the test links sq_ros1_rclcpp_compat_gtest_main (exported by
-// sq_ros1_rclcpp_compat via ${catkin_LIBRARIES}), which supplies a main()
-// that calls ros::Time::init() before RUN_ALL_TESTS. The test source is
-// therefore free of build-specific preprocessor branches.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#include "hybrid_package_common/pointer_analyzer.hpp"
+// On now(): analyze() computes time_diff via Clock(RCL_ROS_TIME).now() - stamp; logged but not
+// asserted. Messages are stamped just before analyze() to keep the subtraction well defined.
+//
+// On main(): ROS 2 ament_add_gtest links gtest_main automatically; ROS 1 tests link
+// sq_ros1_rclcpp_compat_gtest_main (calls ros::Time::init()). No build-specific #ifdefs here.
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <memory>
 
+#include "hybrid_package_common/pointer_analyzer.hpp"
 #include "hybrid_package_msgs/msg/stamped_pointer.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace
 {
 
-// The hybrid logic class accepts std::shared_ptr<const T>, so the test
-// path uses std::shared_ptr on both builds. ROS 1 callbacks deliver
-// boost::shared_ptr at run time, but the IF layer converts via
-// sq_ros1_compat::to_std() before reaching analyze() — none of that
-// surfaces in this gtest, which calls analyze() directly.
 std::shared_ptr<hybrid_package_msgs::msg::StampedPointer> make_msg()
 {
   auto msg = std::make_shared<hybrid_package_msgs::msg::StampedPointer>();
@@ -52,8 +42,7 @@ std::shared_ptr<hybrid_package_msgs::msg::StampedPointer> make_msg()
 class PointerAnalyzerTest : public ::testing::Test
 {
 protected:
-  hybrid_package_common::PointerAnalyzer analyzer_{
-    rclcpp::get_logger("pointer_analyzer_test")};
+  hybrid_package_common::PointerAnalyzer analyzer_{rclcpp::get_logger("pointer_analyzer_test")};
 };
 
 TEST_F(PointerAnalyzerTest, MatchingPointerIsReportedAsZeroCopy)

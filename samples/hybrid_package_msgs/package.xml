@@ -4,7 +4,7 @@
   <name>hybrid_package_msgs</name>
   <version>0.0.1</version>
   <description>Hybrid ROS1/ROS2 message definitions for pointer zero-copy demo</description>
-  <maintainer email="nhatao@seqsense.com">Naotaka Hatao</maintainer>
+  <maintainer email="hatao.jsk@gmail.com">Naotaka Hatao</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
@@ -17,6 +17,11 @@
   <build_depend condition="$ROS_VERSION == 1">sq_ros1_rclcpp_compat</build_depend>
 
   <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
+
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_clang_format</test_depend>
+
   <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
 
   <export>

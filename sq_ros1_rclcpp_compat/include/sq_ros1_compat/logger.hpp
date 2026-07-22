@@ -1,18 +1,19 @@
+// Copyright 2026 SEQSENSE, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef SQ_ROS1_COMPAT__LOGGER_HPP_
 #define SQ_ROS1_COMPAT__LOGGER_HPP_
-
-// Logger factory for ROS 1 interface code.
-//
-// Hybridized logic classes accept rclcpp::Logger at construction so they
-// can emit log messages without depending on rclcpp::Node / ros::NodeHandle.
-// The ROS 1 IF layer needs to construct one such logger to pass in.
-//
-// This wrapper exists so the IF code does not have to include
-// rclcpp/rclcpp.hpp directly: the convention for hybridized packages is
-// that ROS 1 IF code only reaches into compat through sq_ros1_compat/*.
-// The returned object is rclcpp::Logger (defined by the rclcpp shim on
-// ROS 1, by the real rclcpp on ROS 2); the IF code typically forwards it
-// straight into the logic class constructor without naming the type.
 
 #include <string>
 
@@ -21,11 +22,7 @@
 namespace sq_ros1_compat
 {
 
-inline rclcpp::Logger
-get_logger(const std::string & name)
-{
-  return rclcpp::get_logger(name);
-}
+inline rclcpp::Logger get_logger(const std::string & name) { return rclcpp::get_logger(name); }
 
 }  // namespace sq_ros1_compat
 

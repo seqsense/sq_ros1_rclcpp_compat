@@ -59,7 +59,7 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
 
   # Publisher component
   ament_auto_add_library(pointer_publisher_node SHARED
-                         src/ros2_pointer_publisher_node.cpp)
+    src/ros2_pointer_publisher_node.cpp)
   rclcpp_components_register_node(
     pointer_publisher_node PLUGIN
     "hybrid_package_pubsub_samples::PointerPublisherNode" EXECUTABLE
@@ -67,13 +67,24 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
 
   # Subscriber component
   ament_auto_add_library(pointer_subscriber_node SHARED
-                         src/ros2_pointer_subscriber_node.cpp)
+    src/ros2_pointer_subscriber_node.cpp)
   rclcpp_components_register_node(
     pointer_subscriber_node PLUGIN
     "hybrid_package_pubsub_samples::PointerSubscriberNode" EXECUTABLE
     pointer_subscriber_node_exec)
 
   if(BUILD_TESTING)
+    find_package(ament_lint_auto REQUIRED)
+    list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_uncrustify)
+    # clang-format ships a different bundled .clang-format per distro (humble
+    # lacks "AfterEnum: true"), so the same source cannot satisfy every distro's
+    # formatter. Formatting is a style-only check, so run it on jazzy (the
+    # source of truth) and skip it on humble.
+    if("$ENV{ROS_DISTRO}" STREQUAL "humble")
+      list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_clang_format)
+    endif()
+    ament_lint_auto_find_test_dependencies()
+
     find_package(ament_cmake_gtest REQUIRED)
     find_package(launch_testing_ament_cmake REQUIRED)
 
