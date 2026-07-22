@@ -51,7 +51,7 @@ ROS メッセージについて、ROS 1 の generator が生成するポイン�
 | `rclcpp::Logger` | バックエンドは `spdlog` |
 | `RCLCPP_DEBUG/INFO/WARN/ERROR` / 各 `_THROTTLE` 版 | throttle は `std::chrono::steady_clock` ベース |
 | `rclcpp::Clock` / `Time` / `Duration` | 時刻・時間 (時計種別ごとのバックエンドは下記注記) |
-| `rclcpp::Node` | パラメータ API のみ提供、ノードの機能は持たない |
+| `rclcpp::Node` | パラメータ API と `get_logger()` / `now()` / `get_name()` などの最小限の helper。pub/sub など ROS 2 のノード機能は持たない |
 
 `rclcpp::Clock` のバックエンドは時計種別で異なる: `RCL_ROS_TIME` は `ros::Time`、`RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` は `ros::WallTime`。ただし `ros::WallTime` は Wall Clock であるため、`RCL_STEADY_TIME` を指定しても単調増加は保証されない点に注意。
 
@@ -81,7 +81,7 @@ ROS 1 と ROS 2 では、メッセージの include パスと型名が以下の�
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。`${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
+ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。このライブラリは `CATKIN_ENABLE_TESTING` が有効なとき (テストビルド時) にのみビルド・export されるが、その際は `${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
 
 ROS 2 では `ament_add_gtest` が `gtest_main` を提供するため、上記のような仕組みは必要ない。
 

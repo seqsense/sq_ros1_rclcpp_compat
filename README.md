@@ -50,7 +50,7 @@ Provides the rclcpp API used by the logic layer on ROS 1. Headers live under [sq
 | `rclcpp::Logger` | Backed by `spdlog` |
 | `RCLCPP_DEBUG/INFO/WARN/ERROR` and each `_THROTTLE` variant | Throttle is based on `std::chrono::steady_clock` |
 | `rclcpp::Clock` / `Time` / `Duration` | Time / duration (per-clock-type backend noted below) |
-| `rclcpp::Node` | Parameter API only; no node functionality |
+| `rclcpp::Node` | Parameter API plus minimal helpers (`get_logger()` / `now()` / `get_name()`); no ROS 2 node functionality such as pub/sub |
 
 The `rclcpp::Clock` backend depends on the clock type: `RCL_ROS_TIME` uses `ros::Time`, while `RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` use `ros::WallTime`. Note that `ros::WallTime` is a wall clock, so — unlike the real rclcpp — `RCL_STEADY_TIME` does not guarantee monotonicity.
 
@@ -80,7 +80,7 @@ For the following, a header that was `*.h` on ROS 1 was renamed to `*.hpp` on RO
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is exported through `${catkin_LIBRARIES}`, so any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed.
+ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is built and exported through `${catkin_LIBRARIES}` only when `CATKIN_ENABLE_TESTING` is on (i.e. during test builds); when it is, any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed.
 
 On ROS 2 this mechanism is unnecessary; `ament_add_gtest` already supplies `gtest_main`.
 
