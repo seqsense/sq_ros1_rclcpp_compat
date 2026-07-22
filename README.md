@@ -2,62 +2,87 @@
 
 Japanese version: [README_ja.md](README_ja.md)
 
-ROS 2 `rclcpp` API shim for ROS 1, plus rclcpp-style headers for common message packages. Lets the same C++ source build on ROS 1 (Noetic) and ROS 2 (Jazzy / Humble) — on ROS 2 the package is intentionally a no-op.
+A `rclcpp` (ROS 2) API shim for ROS 1, plus rclcpp-style headers for commonly used message packages.
 
-The intended use case is **gradual ROS 1 → ROS 2 migration**: keep nodes building on ROS 1 while the logic layer is rewritten against the ROS 2 API.
+The intended use case is **gradual ROS 1 → ROS 2 migration**: rewrite a node's logic layer against the ROS 2 API while keeping it building on ROS 1.
 
-[sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) builds on this shim with AI agents that turn existing ROS 1 packages into hybrid packages that build and run on both ROS 1 and ROS 2, plus a Docker environment for building and running them on either side.
+[sq_ros_hybrid_kit](https://github.com/seqsense/sq_ros_hybrid_kit) builds on this shim, providing AI agents that convert existing ROS 1 C++ packages into hybrid packages buildable on both ROS 1 (Noetic or ROS One) and ROS 2 (Humble or Jazzy), along with a Docker environment for building and running them on either side.
 
 ## Hybridization design philosophy
 
 A hybrid C++ package is structured in three layers:
 
-- **Logic layer** — pure C++ written against `rclcpp`. One `.cpp` / `.hpp` set is shared between the two builds; gtests sit on top of the same source and are shared too.
-- **ROS 1 interface layer** — written against `roscpp`.
-- **ROS 2 interface layer** — written against `rclcpp`.
+- **Shared ROS 1 / ROS 2 logic layer** — written against `rclcpp`
+- **ROS 1 interface layer** — written against `roscpp`
+- **ROS 2 interface layer** — written against `rclcpp`
 
-The node-level interfaces of `roscpp` and `rclcpp` diverge too much to share, so the **interface layer is intentionally written twice**. Only the logic layer is shared, and this shim is what makes that practical: it exposes on top of `roscpp` the rclcpp surface the logic layer cannot avoid (`Logger`, `Clock` / `Time`, message types, `RCLCPP_*` macros, throttled logging, ...).
+The node-level interfaces of `roscpp` and `rclcpp` diverge too much to share, so the interface layer is written twice. Only the logic layer is shared, and this package is what makes that sharing practical: on top of `roscpp` it provides the rclcpp surface the logic layer cannot avoid (`Logger`, `Clock` / `Time`, message types, `RCLCPP_*` macros, throttled logging, ...) as a ROS 1 shim, along with message-type conversion wrappers.
 
-In practice, once the complex logic has been factored out and pinned down by unit tests, migrating the existing ROS 1 interface to its ROS 2 counterpart tends to be relatively straightforward.
+Once the package has been verified on ROS 2 and ROS 1 support is no longer needed, it can be turned into a pure ROS 2 package simply by deleting the ROS 1 interface layer and the ROS 1-specific parts of `CMakeLists.txt` / `package.xml` (including the dependency on this package).
 
-The canonical embodiment is [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) — read its [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) (shared logic) alongside [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) and [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp).
+The canonical example is under [`samples/hybrid_imu_analyzer/`](samples/hybrid_imu_analyzer/) — reading the shared logic [`src/imu_analyzer.cpp`](samples/hybrid_imu_analyzer/src/imu_analyzer.cpp) alongside the two interface wrappers [`src/ros1_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros1_imu_analyzer_node.cpp) / [`src/ros2_imu_analyzer_node.cpp`](samples/hybrid_imu_analyzer/src/ros2_imu_analyzer_node.cpp) is the clearest introduction.
 
 ## What's provided
 
-### `rclcpp` shim
+### ROS 1 interface layer helpers
 
-`rclcpp::Logger`, `rclcpp::Clock` / `Time` / `Duration`, `rclcpp::Node` (parameter API), and `RCLCPP_DEBUG/INFO/WARN/ERROR` plus their `_THROTTLE` variants. Headers live under [sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/). Logging is backed by `spdlog`; throttle uses `std::chrono::steady_clock`.
-
-### ROS 1 / ROS 2 message-header alignment
-
-ROS 2 uses `#include <std_msgs/msg/string.hpp>` and the type `std_msgs::msg::String`; ROS 1 uses `#include <std_msgs/String.h>` and `std_msgs::String`. To let the logic layer use the ROS 2 form on both sides, this package generates a shim header on ROS 1 — at `<pkg>/msg/<snake_case>.hpp` — that includes the ROS 1 header and re-exposes the type as `<pkg>::msg::<CamelCase>` via a using-alias to the ROS 1 type. The two namespaces refer to exactly the same C++ type, so message-traits, container element types, and pub/sub APIs work identically with or without the `::msg::` segment.
-
-The shared_ptr typedefs the ROS 1 generator emits (`Ptr` / `ConstPtr`, `boost::shared_ptr`-based) and the ROS 2 ones (`SharedPtr` / `ConstSharedPtr`, `std::shared_ptr`-based) are intentionally *not* re-exposed under `::msg::` — the two flavors are different types, and conflating them via member typedefs makes shared_ptr signatures behave inconsistently across builds. Hybrid logic-layer code declares shared_ptr arguments as `std::shared_ptr<const T>`; the ROS 1 IF layer converts from `boost::shared_ptr` via `sq_ros1_compat::to_std()` (see below) — an aliasing-constructor wrap, not a deep copy.
-
-Six standard packages (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) are handled out of the box. For your own message packages, call `generate_ros1_compat_headers()` from your `CMakeLists.txt` — see [`samples/hybrid_package_msgs/`](samples/hybrid_package_msgs/) for the recipe.
-
-### ROS 1 interface boundary helpers (`sq_ros1_compat/`)
-
-Headers under [sq_ros1_rclcpp_compat/include/sq_ros1_compat/](sq_ros1_rclcpp_compat/include/sq_ros1_compat/) sit outside the `rclcpp/` shim tree on purpose: they expose no rclcpp surface and are meant to be included from ROS 1 native interface code.
+The headers under [sq_ros1_rclcpp_compat/include/sq_ros1_compat/](sq_ros1_rclcpp_compat/include/sq_ros1_compat/) are included from the ROS 1 interface layer to construct the objects handed to the shared logic layer.
 
 | Header | Provides | Use |
 |--------|----------|-----|
-| `sq_ros1_compat/logger.hpp` | `sq_ros1_compat::get_logger(name)` | Construct the `rclcpp::Logger` to pass into a hybridized logic class. |
-| `sq_ros1_compat/msg_ptr.hpp` | `sq_ros1_compat::to_std()` / `to_boost()` | Convert between `boost::shared_ptr` and `std::shared_ptr` at the IF boundary using each library's aliasing constructor — no deep copy. |
+| `sq_ros1_compat/logger.hpp` | `sq_ros1_compat::get_logger(name)` | Construct the `rclcpp::Logger` passed to the shared logic layer |
+| `sq_ros1_compat/msg_ptr.hpp` | `sq_ros1_compat::to_std()` / `to_boost()` | Convert message pointers between `boost::shared_ptr` and `std::shared_ptr` |
 
-Convention for hybridized packages: a ROS 1 IF (`ros1_*.cpp`) only includes `ros/...`, the native msg header (`<msg_pkg>/<Type>.h`), the logic class header, and `sq_ros1_compat/*.hpp`. It does not pull in `rclcpp/...` directly. The logic class then receives the logger and `std::shared_ptr<const T>` messages from the IF without either side being aware of the other's shared_ptr library.
+A shared logic-layer class is recommended to receive its `rclcpp::Logger` through the constructor (or similar). On a ROS 2 build this is the real `rclcpp::Logger`; on a ROS 1 build it is a shim object created by `sq_ros1_compat::get_logger(name)`, through which logging is emitted.
 
-### `tf2_*` ROS 2-style headers
+For ROS messages, the pointer types the ROS 1 generator produces (`Ptr` / `ConstPtr`) are `boost::shared_ptr`-based whereas the ROS 2 ones (`SharedPtr` / `ConstSharedPtr`) are `std::shared_ptr`-based, so they cannot be substituted directly. When using this package, the recommendation is to declare message pointers in the shared logic layer as `std::shared_ptr<T>` or `std::shared_ptr<const T>`, and to convert them from `boost::shared_ptr` on the ROS 1 interface side via `sq_ros1_compat::to_std()`. That function uses the aliasing constructor, so it converts the pointer without a deep copy.
 
-[tf2_eigen/](sq_ros1_rclcpp_compat/include/tf2_eigen/), [tf2_geometry_msgs/](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/), [tf2_sensor_msgs/](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/) — let ROS 1 code use the ROS 2 include layout.
+### Shared ROS 1 / ROS 2 logic layer helpers
 
-### `sensor_msgs::PointCloud2Iterator`
+As noted above, the shared logic layer is written in ROS 2 (rclcpp) style. To build it on ROS 1, the following are provided.
 
-Header-only port of the ROS 2 iterator at [sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/).
+#### `rclcpp` shim
+
+Provides the rclcpp API used by the logic layer on ROS 1. Headers live under [sq_ros1_rclcpp_compat/include/rclcpp/](sq_ros1_rclcpp_compat/include/rclcpp/).
+
+| Provides | Notes |
+|----------|-------|
+| `rclcpp::Logger` | Backed by `spdlog` |
+| `RCLCPP_DEBUG/INFO/WARN/ERROR` and each `_THROTTLE` variant | Throttle is based on `std::chrono::steady_clock` |
+| `rclcpp::Clock` / `Time` / `Duration` | Time / duration (per-clock-type backend noted below) |
+| `rclcpp::Node` | Parameter API plus minimal helpers (`get_logger()` / `now()` / `get_name()`); no ROS 2 node functionality such as pub/sub |
+
+The `rclcpp::Clock` backend depends on the clock type: `RCL_ROS_TIME` uses `ros::Time`, while `RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` use `ros::WallTime`. Note that `ros::WallTime` is a wall clock, so — unlike the real rclcpp — `RCL_STEADY_TIME` does not guarantee monotonicity.
+
+#### ROS 1 / ROS 2 message-header alignment
+
+The include path and type name of a message differ between ROS 1 and ROS 2:
+
+| | include | Type name |
+|---|---------|-----------|
+| ROS 1 | `#include "std_msgs/String.h"` | `std_msgs::String` |
+| ROS 2 | `#include "std_msgs/msg/string.hpp"` | `std_msgs::msg::String` |
+
+This package can generate wrapper headers that let the ROS 2 form be used from ROS 1: it generates a header named `<pkg>/msg/<snake_case>.hpp` that includes the original ROS 1 header and re-exposes `<pkg>::msg::<CamelCase>` as a using-alias to the ROS 1 type.
+
+Six standard packages (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) get their ROS 1 wrapper headers generated automatically within this package. For your own interface packages, call `generate_ros1_compat_headers()` from your `CMakeLists.txt` to generate the ROS 1 wrapper headers. See [samples/hybrid_package_msgs/](samples/hybrid_package_msgs/) for a concrete example.
+
+Note that only a type using-alias is generated; pointer member types such as `SharedPtr` / `ConstSharedPtr` are not defined. A using-alias merely gives another name to the existing ROS 1 type and cannot add members to it, and defining a distinct type instead would break type identity and no longer match the pub/sub and message-traits specializations. In addition, a ROS 1 subscription callback delivers a `boost::shared_ptr`, so defining `std::shared_ptr`-based members would serve no purpose. As described above, the recommendation is to declare message pointers in the shared logic layer as `std::shared_ptr<T>` or `std::shared_ptr<const T>` and to convert them on the ROS 1 interface side via `sq_ros1_compat::to_std()`.
+
+#### `*.hpp` header wrappers
+
+For the following, a header that was `*.h` on ROS 1 was renamed to `*.hpp` on ROS 2, so this package provides simple wrappers that just forward to the `*.h` header:
+
+- [tf2_eigen/tf2_eigen.hpp](sq_ros1_rclcpp_compat/include/tf2_eigen/tf2_eigen.hpp)
+- [tf2_geometry_msgs/tf2_geometry_msgs.hpp](sq_ros1_rclcpp_compat/include/tf2_geometry_msgs/tf2_geometry_msgs.hpp)
+- [tf2_sensor_msgs/tf2_sensor_msgs.hpp](sq_ros1_rclcpp_compat/include/tf2_sensor_msgs/tf2_sensor_msgs.hpp)
+- [sensor_msgs/point_cloud2_iterator.hpp](sq_ros1_rclcpp_compat/include/sensor_msgs/point_cloud2_iterator.hpp)
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is exported through `${catkin_LIBRARIES}`, so any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed. On ROS 2 the shim is unused; `ament_add_gtest` already supplies `gtest_main`.
+ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is built and exported through `${catkin_LIBRARIES}` only when `CATKIN_ENABLE_TESTING` is on (i.e. during test builds); when it is, any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed.
+
+On ROS 2 this mechanism is unnecessary; `ament_add_gtest` already supplies `gtest_main`.
 
 For a test that links it implicitly, see [`samples/hybrid_imu_analyzer/test/`](samples/hybrid_imu_analyzer/test/) and the ROS 1 branch of its [`CMakeLists.txt`](samples/hybrid_imu_analyzer/CMakeLists.txt).
 
@@ -68,7 +93,7 @@ sq_ros1_rclcpp_compat/
 ├── sq_ros1_rclcpp_compat/   # the shim package itself (catkin / ament_cmake)
 │   ├── include/             # public headers
 │   ├── cmake/               # generate_ros1_compat_headers helper
-│   ├── scripts/             # standalone helper for generating per-package compat packages
+│   ├── scripts/             # script that generates a standalone compat package for a msg package not handled out of the box
 │   ├── src/                 # gtest_main implementation
 │   └── test/                # rostest unit tests for the shim
 └── samples/
@@ -95,7 +120,7 @@ target_link_libraries(<your_target> ${catkin_LIBRARIES})
 
 ```cpp
 #include <rclcpp/rclcpp.hpp>            // resolves to the shim on ROS 1
-#include <std_msgs/msg/string.hpp>      // auto-generated compat header
+#include <std_msgs/msg/string.hpp>      // auto-generated wrapper header
 
 auto logger = rclcpp::get_logger("my_node");
 RCLCPP_INFO(logger, "hello %d", 42);
