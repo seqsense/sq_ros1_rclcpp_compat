@@ -54,7 +54,7 @@ ROS 1 generator が出す shared_ptr typedef (`Ptr` / `ConstPtr`、`boost::share
 
 ### `sensor_msgs::PointCloud2Iterator`
 
-ROS 2 のイテレータをヘッダオンリで移植したもの。[sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/) 配下。
+ROS 1 上で ROS 2 のインクルードレイアウト (`<sensor_msgs/point_cloud2_iterator.hpp>`) を使えるようにするラッパヘッダ。ROS 1 native の `<sensor_msgs/point_cloud2_iterator.h>` に転送する。[sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/) 配下。
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 

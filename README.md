@@ -53,7 +53,7 @@ Convention for hybridized packages: a ROS 1 IF (`ros1_*.cpp`) only includes `ros
 
 ### `sensor_msgs::PointCloud2Iterator`
 
-Header-only port of the ROS 2 iterator at [sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/).
+Wrapper header at [sq_ros1_rclcpp_compat/include/sensor_msgs/](sq_ros1_rclcpp_compat/include/sensor_msgs/) that lets ROS 1 code use the ROS 2 include layout (`<sensor_msgs/point_cloud2_iterator.hpp>`); it forwards to the ROS 1 native `<sensor_msgs/point_cloud2_iterator.h>`.
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
