@@ -4,7 +4,7 @@ project(hybrid_package_pubsub_samples)
 set(CMAKE_CXX_STANDARD 17)
 
 if($ENV{ROS_VERSION} EQUAL 1)
-  message(STATUS "Building for ROS 1 (Noetic)")
+  message(STATUS "Building for ROS 1")
 
   find_package(catkin REQUIRED COMPONENTS roscpp hybrid_package_msgs
                                           sq_ros1_rclcpp_compat)
@@ -48,7 +48,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
   endif()
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
-  message(STATUS "Building for ROS 2 (Jazzy)")
+  message(STATUS "Building for ROS 2")
   add_compile_definitions(IS_ROS2_BUILD)
 
   find_package(ament_cmake_auto REQUIRED)

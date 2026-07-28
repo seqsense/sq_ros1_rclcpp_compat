@@ -76,6 +76,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
     ${_COMPAT_DEPENDS}
     CFG_EXTRAS
     generate_ros1_compat_headers.cmake
+    preprocess_ros1_interfaces.cmake
     ros1_compat_defines.cmake)
 
   include_directories(include ${_COMPAT_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})

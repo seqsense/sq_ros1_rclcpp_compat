@@ -70,6 +70,35 @@ ROS 1 と ROS 2 では、メッセージの include パスと型名が以下の�
 
 なお、生成するのは型の using-alias のみで、`SharedPtr` / `ConstSharedPtr` などのポインタ型メンバは定義していない。using-alias は既存の ROS 1 型に別名を与えるだけでメンバを追加できず、仮に別型として定義すると型の同一性が崩れて pub/sub や message-traits の特殊化と噛み合わなくなるためである。前述の通り、共用ロジック層ではメッセージのポインタを `std::shared_ptr<T>` もしくは `std::shared_ptr<const T>` で宣言し、ROS 1 インタフェース層で `sq_ros1_compat::to_std()` を介して変換することを推奨する。
 
+#### ROS 1 向けのインターフェース定義の書き換え (`preprocess_ros1_interfaces()`)
+
+インタフェース定義についても ROS 2 記法で記述し、ROS 1 でビルドする際に本節で紹介する `preprocess_ros1_interfaces()` を用いてキーワード置換を行うことを推奨する。ROS 1 と ROS 2 で記法が異なり、置換が必要な組み込み型は以下の 3 つだけである。
+
+| ROS 1 記法 | ROS 2 記法 |
+|-----------|-----------|
+| `Header` | `std_msgs/Header` |
+| `time` | `builtin_interfaces/Time` |
+| `duration` | `builtin_interfaces/Duration` |
+
+これ以外の組み込み型 (`bool` / `int8` / `uint8` / `float64` / `string` や配列、`byte` など) と、`pkg/Type` 形式のパッケージ修飾型は ROS 1 / ROS 2 で記法が同一なので置換不要である。
+
+上記のうち `std_msgs/Header` は ROS 1 / ROS 2 のいずれでもビルドが通るため、ソース側で `Header` を `std_msgs/Header` に置き換えておくだけでよい。
+
+残りの `builtin_interfaces/Time` / `builtin_interfaces/Duration` は ROS 1 の生成器が解釈できないため、ROS 1 ビルド時にそれぞれ `time` / `duration` へ書き戻す CMake 関数 `preprocess_ros1_interfaces()` を用意した。以下のようにして利用することができる。
+
+```cmake
+preprocess_ros1_interfaces(SUBDIR msg FILES ${MSG_FILES} OUTPUT_DIR_VAR ROS1_MSG_DIR)
+add_message_files(DIRECTORY ${ROS1_MSG_DIR} FILES ${MSG_FILES})
+```
+
+| キーワード引数 | 内容 |
+|--------------|------|
+| `SUBDIR` | インタフェースファイルが格納されたサブディレクトリ名 (`msg` / `srv` / `action` のいずれか) |
+| `FILES` | インタフェースファイル名のリスト |
+| `OUTPUT_DIR_VAR` | 置換後のファイルを格納したディレクトリのパスを受け取る変数の名前 (関数がこの名前の変数を呼び出し元スコープに定義する) |
+
+`add_message_files` (同様に `add_service_files` / `add_action_files`) に、ROS 1 記法へ置換した後のディレクトリ (`OUTPUT_DIR_VAR` で受け取った変数) とファイル名を渡すことでビルドが通る仕組みである。
+
 #### `*.hpp` ヘッダへのラッパー
 
 以下について、ROS 1 では `*.h` であったヘッダが ROS 2 では `*.hpp` にリネームされているため、本パッケージでは `*.h` に転送するだけの単純なラッパーを提供している。
@@ -93,7 +122,7 @@ ROS 2 では `ament_add_gtest` が `gtest_main` を提供するため、上記�
 sq_ros1_rclcpp_compat/
 ├── sq_ros1_rclcpp_compat/   # shim パッケージ本体 (catkin / ament_cmake)
 │   ├── include/             # 公開ヘッダ
-│   ├── cmake/               # generate_ros1_compat_headers ヘルパ
+│   ├── cmake/               # generate_ros1_compat_headers / preprocess_ros1_interfaces ヘルパ
 │   ├── scripts/             # 組込対象外の msg パッケージ用に単独の compat パッケージを生成するスクリプト
 │   ├── src/                 # gtest_main 実装
 │   └── test/                # shim 自体の rostest ユニットテスト

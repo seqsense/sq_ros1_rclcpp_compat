@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(hybrid_package_msgs)
 
 if($ENV{ROS_VERSION} EQUAL 1)
-  message(STATUS "Building for ROS 1 (Noetic)")
+  message(STATUS "Building for ROS 1")
 
   find_package(catkin REQUIRED COMPONENTS std_msgs message_generation
                                           sq_ros1_rclcpp_compat)
@@ -17,14 +17,14 @@ if($ENV{ROS_VERSION} EQUAL 1)
     OUTPUT_DIR "${CATKIN_DEVEL_PREFIX}/include")
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
-  message(STATUS "Building for ROS 2 (Jazzy)")
+  message(STATUS "Building for ROS 2")
 
-  find_package(ament_cmake REQUIRED)
-  find_package(rosidl_default_generators REQUIRED)
-  find_package(std_msgs REQUIRED)
+  find_package(ament_cmake_auto REQUIRED)
+  ament_auto_find_build_dependencies()
 
-  rosidl_generate_interfaces(${PROJECT_NAME} "msg/StampedPointer.msg"
-    DEPENDENCIES std_msgs)
+  # Auto-discover msg/srv/action files and derive DEPENDENCIES from
+  # package.xml (no need to list interface files explicitly).
+  rosidl_auto_generate_interfaces()
 
   if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -32,7 +32,7 @@ elseif($ENV{ROS_VERSION} EQUAL 2)
     ament_lint_auto_find_test_dependencies()
   endif()
 
-  ament_package()
+  ament_auto_package()
 
 else()
   message(

@@ -69,6 +69,35 @@ Six standard packages (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `
 
 Note that only a type using-alias is generated; pointer member types such as `SharedPtr` / `ConstSharedPtr` are not defined. A using-alias merely gives another name to the existing ROS 1 type and cannot add members to it, and defining a distinct type instead would break type identity and no longer match the pub/sub and message-traits specializations. In addition, a ROS 1 subscription callback delivers a `boost::shared_ptr`, so defining `std::shared_ptr`-based members would serve no purpose. As described above, the recommendation is to declare message pointers in the shared logic layer as `std::shared_ptr<T>` or `std::shared_ptr<const T>` and to convert them on the ROS 1 interface side via `sq_ros1_compat::to_std()`.
 
+#### Rewriting interface definitions for ROS 1 (`preprocess_ros1_interfaces()`)
+
+Author your interface definitions in the canonical ROS 2 notation as well, and use `preprocess_ros1_interfaces()` (described in this section) to rewrite them when building on ROS 1. There are only three built-in types whose notation differs between ROS 1 and ROS 2 and thus needs rewriting:
+
+| ROS 1 notation | ROS 2 notation |
+|----------------|----------------|
+| `Header` | `std_msgs/Header` |
+| `time` | `builtin_interfaces/Time` |
+| `duration` | `builtin_interfaces/Duration` |
+
+Every other built-in type (`bool` / `int8` / `uint8` / `float64` / `string`, arrays, `byte`, ...) and package-qualified `pkg/Type` types share the same notation in ROS 1 and ROS 2, so they need no rewriting.
+
+Of the three, `std_msgs/Header` builds on both ROS 1 and ROS 2, so you only need to write `std_msgs/Header` in the source (in place of `Header`).
+
+The remaining `builtin_interfaces/Time` / `builtin_interfaces/Duration` are not understood by the ROS 1 generator, so `preprocess_ros1_interfaces()` is provided to rewrite them back to the ROS 1 primitives (`time` / `duration`) at ROS 1 build time. Use it as follows:
+
+```cmake
+preprocess_ros1_interfaces(SUBDIR msg FILES ${MSG_FILES} OUTPUT_DIR_VAR ROS1_MSG_DIR)
+add_message_files(DIRECTORY ${ROS1_MSG_DIR} FILES ${MSG_FILES})
+```
+
+| Keyword argument | Meaning |
+|------------------|---------|
+| `SUBDIR` | Name of the subdirectory holding the interface files (one of `msg` / `srv` / `action`) |
+| `FILES` | List of interface file names |
+| `OUTPUT_DIR_VAR` | Name of a variable that receives the path of the directory holding the rewritten files (the function defines a variable of this name in the caller's scope) |
+
+Passing the rewritten directory (the variable received via `OUTPUT_DIR_VAR`) and the file names to `add_message_files` (likewise `add_service_files` / `add_action_files`) is what makes the ROS 1 build succeed.
+
 #### `*.hpp` header wrappers
 
 For the following, a header that was `*.h` on ROS 1 was renamed to `*.hpp` on ROS 2, so this package provides simple wrappers that just forward to the `*.h` header:
@@ -92,7 +121,7 @@ For a test that links it implicitly, see [`samples/hybrid_imu_analyzer/test/`](s
 sq_ros1_rclcpp_compat/
 ├── sq_ros1_rclcpp_compat/   # the shim package itself (catkin / ament_cmake)
 │   ├── include/             # public headers
-│   ├── cmake/               # generate_ros1_compat_headers helper
+│   ├── cmake/               # generate_ros1_compat_headers / preprocess_ros1_interfaces helpers
 │   ├── scripts/             # script that generates a standalone compat package for a msg package not handled out of the box
 │   ├── src/                 # gtest_main implementation
 │   └── test/                # rostest unit tests for the shim
