@@ -4,7 +4,7 @@ project(hybrid_imu_analyzer)
 set(CMAKE_CXX_STANDARD 17)
 
 if($ENV{ROS_VERSION} EQUAL 1)
-  message(STATUS "Building for ROS 1 (Noetic)")
+  message(STATUS "Building for ROS 1")
 
   find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs sq_ros1_rclcpp_compat)
   catkin_package()
@@ -37,7 +37,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
   endif()
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
-  message(STATUS "Building for ROS 2 (Jazzy)")
+  message(STATUS "Building for ROS 2")
 
   find_package(ament_cmake_auto REQUIRED)
   ament_auto_find_build_dependencies()
