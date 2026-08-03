@@ -113,6 +113,11 @@ public:
   {
   }
 
+  // Mirrors real rclcpp's defaulted 3-arg ctor so that Time(0, RCL_ROS_TIME) is
+  // ambiguous here too, instead of compiling on ROS 1 and only failing on ROS 2.
+  // Write Time(0, 0, RCL_ROS_TIME). Deleted, so the no-clock form stays rejected.
+  Time(int32_t seconds, uint32_t nanoseconds) = delete;
+
   Time(
     const ros::Time & t,
     rcl_clock_type_t clock_type = RCL_ROS_TIME)  // NOLINT(runtime/explicit)
