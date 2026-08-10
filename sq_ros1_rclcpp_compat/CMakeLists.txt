@@ -21,7 +21,12 @@ if($ENV{ROS_VERSION} EQUAL 1)
   set(_COMPAT_MSG_PACKAGES std_msgs geometry_msgs nav_msgs sensor_msgs
       visualization_msgs diagnostic_msgs)
 
-  set(_COMPAT_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/compat_include")
+  # Generated into the devel space rather than the build tree, so that the
+  # headers can be installed. Downstream packages that consume an *installed*
+  # sq_ros1_rclcpp_compat (an Alpine ROS apk, say) rather than a catkin devel
+  # space would otherwise not find them.
+  set(_COMPAT_INCLUDE_DIR
+      "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
   set(_COMPAT_SCRIPT
       "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_ros1_compat_header.py")
 
@@ -109,6 +114,8 @@ if($ENV{ROS_VERSION} EQUAL 1)
   endif()
 
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+  install(DIRECTORY ${_COMPAT_INCLUDE_DIR}/
+          DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
   message(STATUS "Building sq_ros1_rclcpp_compat for ROS 2 (no-op)")
