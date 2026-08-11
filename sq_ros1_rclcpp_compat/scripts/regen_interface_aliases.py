@@ -70,7 +70,8 @@ def _load_generator():
 
 
 def action_generated(share_dir):
-    """Names genaction.py derives from *.action, which have no ROS 2 analogue.
+    """
+    Collect names genaction.py derives from *.action, which ROS 2 has no analogue for.
 
     ROS 1 expands Foo.action into seven flat messages; ROS 2 models the same
     thing as a single action type with nested Goal/Result/Feedback. Aliasing
@@ -92,7 +93,7 @@ def action_generated(share_dir):
 
 
 def collect(share_dir, kind):
-    """CamelCase type names for kind ('msg' or 'srv'), action spillover removed."""
+    """Return type names for kind ('msg' or 'srv'), action spillover removed."""
     type_dir = os.path.join(share_dir, kind)
     if not os.path.isdir(type_dir):
         return []
@@ -116,7 +117,7 @@ def main():
     parser.add_argument(
         '--output-dir',
         default=os.path.join(_PKG_ROOT, 'include'),
-        help='Where to write the aliases (default: this package\'s include/)',
+        help="Where to write the aliases (default: this package's include/)",
     )
     parser.add_argument(
         '--check',
@@ -142,10 +143,7 @@ def main():
                     args.output_dir, package, kind,
                     generator.camel_to_snake(name) + '.hpp')
                 if args.check:
-                    expected = generator.TEMPLATE.format(
-                        package=package, name=name, kind=kind,
-                        guard=f'{package.upper()}__{kind.upper()}'
-                              f'__{name.upper()}_HPP_')
+                    expected = generator.render(package, name, kind)
                     if not os.path.exists(out_path):
                         stale.append(f'{out_path} (missing)')
                     elif open(out_path).read() != expected:

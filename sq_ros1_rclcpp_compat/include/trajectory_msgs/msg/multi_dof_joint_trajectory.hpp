@@ -1,5 +1,19 @@
-#ifndef TRAJECTORY_MSGS__MSG__MULTIDOFJOINTTRAJECTORY_HPP_
-#define TRAJECTORY_MSGS__MSG__MULTIDOFJOINTTRAJECTORY_HPP_
+// Copyright 2026 SEQSENSE, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef TRAJECTORY_MSGS__MSG__MULTI_DOF_JOINT_TRAJECTORY_HPP_
+#define TRAJECTORY_MSGS__MSG__MULTI_DOF_JOINT_TRAJECTORY_HPP_
 
 // Auto-generated ROS 2-style compatibility header for ROS 1.
 // Provides: trajectory_msgs::msg::MultiDOFJointTrajectory as a using-alias for the ROS 1
@@ -10,10 +24,12 @@
 
 #include "trajectory_msgs/MultiDOFJointTrajectory.h"
 
-namespace trajectory_msgs {
-namespace msg {
+namespace trajectory_msgs
+{
+namespace msg
+{
 using MultiDOFJointTrajectory = ::trajectory_msgs::MultiDOFJointTrajectory;
 }  // namespace msg
 }  // namespace trajectory_msgs
 
-#endif  // TRAJECTORY_MSGS__MSG__MULTIDOFJOINTTRAJECTORY_HPP_
+#endif  // TRAJECTORY_MSGS__MSG__MULTI_DOF_JOINT_TRAJECTORY_HPP_

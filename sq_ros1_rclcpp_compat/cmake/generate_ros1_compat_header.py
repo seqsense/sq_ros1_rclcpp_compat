@@ -42,6 +42,20 @@ import os
 import re
 
 TEMPLATE = """\
+// Copyright 2026 SEQSENSE, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef {guard}
 #define {guard}
 
@@ -54,8 +68,10 @@ TEMPLATE = """\
 
 #include "{package}/{name}.h"
 
-namespace {package} {{
-namespace {kind} {{
+namespace {package}
+{{
+namespace {kind}
+{{
 using {name} = ::{package}::{name};
 }}  // namespace {kind}
 }}  // namespace {package}
@@ -69,15 +85,25 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+def header_guard(package: str, msg_name: str, kind: str = 'msg') -> str:
+    """Include guard cpplint derives from the header's path, not its type name."""
+    return (f'{package.upper()}__{kind.upper()}'
+            f'__{camel_to_snake(msg_name).upper()}_HPP_')
+
+
+def render(package: str, msg_name: str, kind: str = 'msg') -> str:
+    return TEMPLATE.format(
+        package=package, name=msg_name, kind=kind,
+        guard=header_guard(package, msg_name, kind))
+
+
 def generate(package: str, msg_name: str, output_dir: str, kind: str = 'msg') -> str:
     snake = camel_to_snake(msg_name)
-    guard = f'{package.upper()}__{kind.upper()}__{msg_name.upper()}_HPP_'
 
     out_path = os.path.join(output_dir, package, kind, f'{snake}.hpp')
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-    content = TEMPLATE.format(
-        package=package, name=msg_name, kind=kind, guard=guard)
+    content = render(package, msg_name, kind)
 
     # Only write if content changed to avoid unnecessary rebuilds
     if os.path.exists(out_path):

@@ -1,5 +1,19 @@
-#ifndef ACTIONLIB_MSGS__MSG__GOALSTATUS_HPP_
-#define ACTIONLIB_MSGS__MSG__GOALSTATUS_HPP_
+// Copyright 2026 SEQSENSE, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef ACTIONLIB_MSGS__MSG__GOAL_STATUS_HPP_
+#define ACTIONLIB_MSGS__MSG__GOAL_STATUS_HPP_
 
 // Auto-generated ROS 2-style compatibility header for ROS 1.
 // Provides: actionlib_msgs::msg::GoalStatus as a using-alias for the ROS 1
@@ -10,10 +24,12 @@
 
 #include "actionlib_msgs/GoalStatus.h"
 
-namespace actionlib_msgs {
-namespace msg {
+namespace actionlib_msgs
+{
+namespace msg
+{
 using GoalStatus = ::actionlib_msgs::GoalStatus;
 }  // namespace msg
 }  // namespace actionlib_msgs
 
-#endif  // ACTIONLIB_MSGS__MSG__GOALSTATUS_HPP_
+#endif  // ACTIONLIB_MSGS__MSG__GOAL_STATUS_HPP_
