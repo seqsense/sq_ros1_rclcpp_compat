@@ -51,7 +51,7 @@ if($ENV{ROS_VERSION} EQUAL 1)
     DIRECTORY
     APPEND
     PROPERTY CMAKE_CONFIGURE_DEPENDS
-             "${CMAKE_CURRENT_SOURCE_DIR}/interface_aliases.txt")
+    "${CMAKE_CURRENT_SOURCE_DIR}/interface_aliases.txt")
 
   # The gtest_main helper is only built (and only useful) when testing
   # is enabled. Listing it conditionally in catkin_package avoids advertising

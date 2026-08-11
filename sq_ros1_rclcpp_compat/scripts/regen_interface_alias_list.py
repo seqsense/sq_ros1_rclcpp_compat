@@ -143,7 +143,7 @@ def main():
     parser.add_argument(
         '--list-file',
         default=_DEFAULT_LIST,
-        help='List to write (default: this package\'s interface_aliases.txt)',
+        help="List to write (default: this package's interface_aliases.txt)",
     )
     parser.add_argument(
         '--check',
