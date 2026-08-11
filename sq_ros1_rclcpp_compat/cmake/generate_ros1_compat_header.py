@@ -13,12 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Generate ROS 2-style compatibility headers for ROS 1 message types.
+Generate ROS 2-style compatibility headers for ROS 1 interface types.
 
 For each ROS 1 message (e.g. hybrid_package_msgs/StampedPointer),
 generates a header at <package>/msg/<snake_case>.hpp that:
   - Includes the original ROS 1 header
   - Creates a using-alias: <package>::msg::<MsgName> -> <package>::<MsgName>
+
+Services work the same way, at <package>/srv/<snake_case>.hpp. The ROS 1
+service class carries Request/Response member typedefs, matching how ROS 2
+code spells <package>::srv::<SrvName>::Request.
 
 The two namespaces refer to the same C++ type, so all message-traits,
 container element types, and pub/sub APIs work identically whether code
@@ -42,18 +46,18 @@ TEMPLATE = """\
 #define {guard}
 
 // Auto-generated ROS 2-style compatibility header for ROS 1.
-// Provides: {package}::msg::{msg_name} as a using-alias for the ROS 1
-// type {package}::{msg_name}. Logic-layer code that declares shared_ptr
+// Provides: {package}::{kind}::{name} as a using-alias for the ROS 1
+// type {package}::{name}. Logic-layer code that declares shared_ptr
 // arguments as std::shared_ptr<const T> works on both builds; on ROS 1
 // the IF layer converts boost::shared_ptr -> std::shared_ptr via
 // sq_ros1_compat::to_std() (no deep copy).
 
-#include "{package}/{msg_name}.h"
+#include "{package}/{name}.h"
 
 namespace {package} {{
-namespace msg {{
-using {msg_name} = ::{package}::{msg_name};
-}}  // namespace msg
+namespace {kind} {{
+using {name} = ::{package}::{name};
+}}  // namespace {kind}
 }}  // namespace {package}
 
 #endif  // {guard}
@@ -65,14 +69,15 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def generate(package: str, msg_name: str, output_dir: str) -> str:
+def generate(package: str, msg_name: str, output_dir: str, kind: str = 'msg') -> str:
     snake = camel_to_snake(msg_name)
-    guard = f'{package.upper()}__MSG__{msg_name.upper()}_HPP_'
+    guard = f'{package.upper()}__{kind.upper()}__{msg_name.upper()}_HPP_'
 
-    out_path = os.path.join(output_dir, package, 'msg', f'{snake}.hpp')
+    out_path = os.path.join(output_dir, package, kind, f'{snake}.hpp')
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-    content = TEMPLATE.format(package=package, msg_name=msg_name, guard=guard)
+    content = TEMPLATE.format(
+        package=package, name=msg_name, kind=kind, guard=guard)
 
     # Only write if content changed to avoid unnecessary rebuilds
     if os.path.exists(out_path):
@@ -92,14 +97,21 @@ def main() -> None:
     parser.add_argument(
         '--messages',
         nargs='+',
-        required=True,
+        default=[],
         help='CamelCase message names (e.g. StampedPointer)',
+    )
+    parser.add_argument(
+        '--services',
+        nargs='+',
+        default=[],
+        help='CamelCase service names (e.g. ResizeParticle)',
     )
     args = parser.parse_args()
 
-    for msg in args.messages:
-        path = generate(args.package, msg, args.output_dir)
-        print(f'  Generated: {path}')
+    for name in args.messages:
+        print(f'  Generated: {generate(args.package, name, args.output_dir, "msg")}')
+    for name in args.services:
+        print(f'  Generated: {generate(args.package, name, args.output_dir, "srv")}')
 
 
 if __name__ == '__main__':

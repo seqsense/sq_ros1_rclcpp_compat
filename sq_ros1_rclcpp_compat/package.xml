@@ -14,17 +14,6 @@
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">spdlog</depend>
 
-  <!-- Message packages that ROS 2-style compat headers are generated for; see
-       _COMPAT_MSG_PACKAGES in CMakeLists.txt. Undeclared, find_package() finds
-       none of them in a build that installs only the declared dependencies,
-       and the package silently ships no compat headers at all. -->
-  <depend condition="$ROS_VERSION == 1">std_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">geometry_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">nav_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">sensor_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">visualization_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">diagnostic_msgs</depend>
-
   <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_common</test_depend>
