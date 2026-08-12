@@ -17,7 +17,15 @@ if($ENV{ROS_VERSION} EQUAL 1)
   endif()
 
   # Auto-generate ROS 2-style compat headers for standard msg packages.
-  # Add/remove packages from this list as needed.
+  # Add/remove packages from this list as needed -- and keep package.xml's
+  # build_depend entries in step, or configuring fails below.
+  #
+  # These are build_depend rather than depend on purpose: they are needed here
+  # only to enumerate message names. The headers written from that enumeration
+  # are pure text, and the #include each emits resolves in the consumer's
+  # compilation, against the message package that consumer already declares
+  # for itself. Declaring them any more strongly would push all six onto every
+  # ROS 1 consumer of this package.
   set(_COMPAT_MSG_PACKAGES std_msgs geometry_msgs nav_msgs sensor_msgs
       visualization_msgs diagnostic_msgs)
 
@@ -30,32 +38,37 @@ if($ENV{ROS_VERSION} EQUAL 1)
   set(_COMPAT_SCRIPT
       "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_ros1_compat_header.py")
 
+  # Every step below fails loudly. Skipping one silently, as this loop used to
+  # on a missing package, produces a package that builds green and ships an
+  # incomplete set of headers -- a break that only surfaces much later, in an
+  # unrelated package that cannot find a header this one was meant to provide.
   foreach(_pkg ${_COMPAT_MSG_PACKAGES})
-    find_package(${_pkg} QUIET)
-    if(${_pkg}_FOUND)
-      set(_msg_dir "${${_pkg}_DIR}/../msg")
-      if(EXISTS "${_msg_dir}")
-        file(
-          GLOB _msg_files
-          RELATIVE "${_msg_dir}"
-          "${_msg_dir}/*.msg")
-        set(_msg_names "")
-        foreach(_f ${_msg_files})
-          get_filename_component(_n "${_f}" NAME_WE)
-          list(APPEND _msg_names "${_n}")
-        endforeach()
-        if(_msg_names)
-          execute_process(
-            COMMAND
-              "${PYTHON_EXECUTABLE}" "${_COMPAT_SCRIPT}" --package "${_pkg}"
-              --output-dir "${_COMPAT_INCLUDE_DIR}" --messages ${_msg_names}
-            RESULT_VARIABLE _result)
-          if(_result EQUAL 0)
-            message(STATUS "  Generated compat headers for ${_pkg}")
-          endif()
-        endif()
-      endif()
+    find_package(${_pkg} REQUIRED)
+    set(_msg_dir "${${_pkg}_DIR}/../msg")
+    if(NOT EXISTS "${_msg_dir}")
+      message(FATAL_ERROR "${_pkg} provides no msg directory at ${_msg_dir}")
     endif()
+    file(
+      GLOB _msg_files
+      RELATIVE "${_msg_dir}"
+      "${_msg_dir}/*.msg")
+    if(NOT _msg_files)
+      message(FATAL_ERROR "no .msg files found in ${_msg_dir}")
+    endif()
+    set(_msg_names "")
+    foreach(_f ${_msg_files})
+      get_filename_component(_n "${_f}" NAME_WE)
+      list(APPEND _msg_names "${_n}")
+    endforeach()
+    execute_process(
+      COMMAND
+        "${PYTHON_EXECUTABLE}" "${_COMPAT_SCRIPT}" --package "${_pkg}"
+        --output-dir "${_COMPAT_INCLUDE_DIR}" --messages ${_msg_names}
+      RESULT_VARIABLE _result)
+    if(NOT _result EQUAL 0)
+      message(FATAL_ERROR "failed to generate compat headers for ${_pkg}")
+    endif()
+    message(STATUS "  Generated compat headers for ${_pkg}")
   endforeach()
 
   # The gtest_main helper is only built (and only useful) when testing

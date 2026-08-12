@@ -14,16 +14,19 @@
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">spdlog</depend>
 
-  <!-- Message packages that ROS 2-style compat headers are generated for; see
-       _COMPAT_MSG_PACKAGES in CMakeLists.txt. Undeclared, find_package() finds
-       none of them in a build that installs only the declared dependencies,
-       and the package silently ships no compat headers at all. -->
-  <depend condition="$ROS_VERSION == 1">std_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">geometry_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">nav_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">sensor_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">visualization_msgs</depend>
-  <depend condition="$ROS_VERSION == 1">diagnostic_msgs</depend>
+  <!-- Message packages the ROS 2-style compat headers are generated for; see
+       _COMPAT_MSG_PACKAGES in CMakeLists.txt. Needed only to enumerate message
+       names while building this package, so build_depend rather than depend:
+       the generated headers are pure text, and each #include they emit
+       resolves in the consumer's compilation, against the message package
+       that consumer already declares. A stronger declaration would push all
+       six onto every ROS 1 consumer of this package. -->
+  <build_depend condition="$ROS_VERSION == 1">std_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">geometry_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">nav_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">sensor_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">visualization_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">diagnostic_msgs</build_depend>
 
   <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
