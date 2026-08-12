@@ -14,19 +14,25 @@
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">spdlog</depend>
 
-  <!-- Message packages the ROS 2-style compat headers are generated for; see
-       _COMPAT_MSG_PACKAGES in CMakeLists.txt. Needed only to enumerate message
-       names while building this package, so build_depend rather than depend:
-       the generated headers are pure text, and each #include they emit
-       resolves in the consumer's compilation, against the message package
-       that consumer already declares. A stronger declaration would push all
-       six onto every ROS 1 consumer of this package. -->
-  <build_depend condition="$ROS_VERSION == 1">std_msgs</build_depend>
+  <!-- Interface packages the ROS 2-style compat headers are generated for; see
+       _COMPAT_INTERFACE_PACKAGES in CMakeLists.txt, which must list exactly
+       these. Needed only to enumerate type names while building this package,
+       so build_depend rather than depend: the generated headers are pure text,
+       and each #include they emit resolves in the consumer's compilation,
+       against the interface package that consumer already declares. A stronger
+       declaration would push all twelve onto every ROS 1 consumer. -->
+  <build_depend condition="$ROS_VERSION == 1">actionlib_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">diagnostic_msgs</build_depend>
   <build_depend condition="$ROS_VERSION == 1">geometry_msgs</build_depend>
   <build_depend condition="$ROS_VERSION == 1">nav_msgs</build_depend>
   <build_depend condition="$ROS_VERSION == 1">sensor_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">shape_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">std_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">std_srvs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">stereo_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">tf2_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">trajectory_msgs</build_depend>
   <build_depend condition="$ROS_VERSION == 1">visualization_msgs</build_depend>
-  <build_depend condition="$ROS_VERSION == 1">diagnostic_msgs</build_depend>
 
   <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
