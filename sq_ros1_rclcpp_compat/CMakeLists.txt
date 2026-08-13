@@ -16,41 +16,58 @@ if($ENV{ROS_VERSION} EQUAL 1)
     set(fmt_LIBRARIES fmt::fmt)
   endif()
 
-  # Auto-generate ROS 2-style compat headers for standard msg packages.
-  # Add/remove packages from this list as needed.
-  set(_COMPAT_MSG_PACKAGES std_msgs geometry_msgs nav_msgs sensor_msgs
-      visualization_msgs diagnostic_msgs)
+  # Auto-generate ROS 2-style compat headers for the core ROS 1 interfaces:
+  # std_msgs, std_srvs, the common_msgs stack and tf2_msgs. Extend the list
+  # deliberately -- and keep package.xml's build_depend entries in step, or
+  # configuring fails below. An alias for a type ROS 2 does not have is a trap.
+  #
+  # These are build_depend rather than depend on purpose: they are needed here
+  # only to enumerate type names. The headers written from that enumeration
+  # are pure text, and the #include each emits resolves in the consumer's
+  # compilation, against the interface package that consumer already declares
+  # for itself. Declaring them any more strongly would push all twelve onto
+  # every ROS 1 consumer of this package.
+  set(_COMPAT_INTERFACE_PACKAGES
+      actionlib_msgs
+      diagnostic_msgs
+      geometry_msgs
+      nav_msgs
+      sensor_msgs
+      shape_msgs
+      std_msgs
+      std_srvs
+      stereo_msgs
+      tf2_msgs
+      trajectory_msgs
+      visualization_msgs)
 
-  set(_COMPAT_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/compat_include")
+  # Generated into the devel space rather than the build tree, so that the
+  # headers can be installed. Downstream packages that consume an *installed*
+  # sq_ros1_rclcpp_compat (an Alpine ROS apk, say) rather than a catkin devel
+  # space would otherwise not find them.
+  set(_COMPAT_INCLUDE_DIR
+      "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
   set(_COMPAT_SCRIPT
       "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_ros1_compat_header.py")
 
-  foreach(_pkg ${_COMPAT_MSG_PACKAGES})
-    find_package(${_pkg} QUIET)
-    if(${_pkg}_FOUND)
-      set(_msg_dir "${${_pkg}_DIR}/../msg")
-      if(EXISTS "${_msg_dir}")
-        file(
-          GLOB _msg_files
-          RELATIVE "${_msg_dir}"
-          "${_msg_dir}/*.msg")
-        set(_msg_names "")
-        foreach(_f ${_msg_files})
-          get_filename_component(_n "${_f}" NAME_WE)
-          list(APPEND _msg_names "${_n}")
-        endforeach()
-        if(_msg_names)
-          execute_process(
-            COMMAND
-              "${PYTHON_EXECUTABLE}" "${_COMPAT_SCRIPT}" --package "${_pkg}"
-              --output-dir "${_COMPAT_INCLUDE_DIR}" --messages ${_msg_names}
-            RESULT_VARIABLE _result)
-          if(_result EQUAL 0)
-            message(STATUS "  Generated compat headers for ${_pkg}")
-          endif()
-        endif()
-      endif()
+  # Every step below fails loudly. Skipping one silently, as this loop used to
+  # on a missing package, produces a package that builds green and ships an
+  # incomplete set of headers -- a break that only surfaces much later, in an
+  # unrelated package that cannot find a header this one was meant to provide.
+  foreach(_pkg ${_COMPAT_INTERFACE_PACKAGES})
+    find_package(${_pkg} REQUIRED)
+    execute_process(
+      COMMAND
+        "${PYTHON_EXECUTABLE}" "${_COMPAT_SCRIPT}" --package "${_pkg}"
+        --share-dir "${${_pkg}_DIR}/.."
+        --output-dir "${_COMPAT_INCLUDE_DIR}"
+      RESULT_VARIABLE _result
+      OUTPUT_VARIABLE _output)
+    if(NOT _result EQUAL 0)
+      message(FATAL_ERROR "failed to generate compat headers for ${_pkg}")
     endif()
+    string(STRIP "${_output}" _output)
+    message(STATUS "  Generated compat headers for ${_output}")
   endforeach()
 
   # The gtest_main helper is only built (and only useful) when testing
@@ -109,6 +126,8 @@ if($ENV{ROS_VERSION} EQUAL 1)
   endif()
 
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+  install(DIRECTORY ${_COMPAT_INCLUDE_DIR}/
+          DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
   message(STATUS "Building sq_ros1_rclcpp_compat for ROS 2 (no-op)")

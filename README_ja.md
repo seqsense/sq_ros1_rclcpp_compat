@@ -64,9 +64,13 @@ ROS 1 と ROS 2 では、メッセージの include パスと型名が以下の�
 | ROS 1 | `#include "std_msgs/String.h"` | `std_msgs::String`|
 | ROS 2 | `#include "std_msgs/msg/string.hpp"` | `std_msgs::msg::String`|
 
-本パッケージでは、ROS 2 記法を ROS 1 から使うためのラッパーヘッダを生成できる。すなわち、`<pkg>/msg/<snake_case>.hpp` という名前のヘッダを生成し、その中で ROS 1 の元ヘッダを include した上で、`<pkg>::msg::<CamelCase>` を ROS 1 型への using-alias として再公開する。
+本パッケージでは、ROS 2 記法を ROS 1 から使うためのラッパーヘッダを生成できる。すなわち、`<pkg>/msg/<snake_case>.hpp` という名前のヘッダを生成し、その中で ROS 1 の元ヘッダを include した上で、`<pkg>::msg::<CamelCase>` を ROS 1 型への using-alias として再公開する。サービスも同様に `<pkg>/srv/<snake_case>.hpp` として生成する。ROS 1 のサービスクラスは元々 `Request` / `Response` のメンバ typedef を持つため、同じ alias 1 行で ROS 2 記法の `<pkg>::srv::<CamelCase>::Request` がそのまま通る。
 
-標準パッケージ 6 つ (`std_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `visualization_msgs`, `diagnostic_msgs`) については、本パッケージ内で自動的に ROS 1 用 ラッパーヘッダを作成する。独自インターフェースパッケージでは `CMakeLists.txt` から `generate_ros1_compat_headers()` を呼び出すことで、ROS 1 用 ラッパーヘッダを作成することができる。具体的な例は [samples/hybrid_package_msgs/](samples/hybrid_package_msgs/) を参照。
+ROS 1 の中核インターフェースパッケージについては、本パッケージ内で自動的に ROS 1 用ラッパーヘッダを作成する。対象は `std_msgs`, `std_srvs`, `common_msgs` 一式 (`actionlib_msgs`, `diagnostic_msgs`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `shape_msgs`, `stereo_msgs`, `trajectory_msgs`, `visualization_msgs`), `tf2_msgs`。独自インターフェースパッケージでは `CMakeLists.txt` から `generate_ros1_compat_headers()` を呼び出すことで、ROS 1 用 ラッパーヘッダを作成することができる。具体的な例は [samples/hybrid_package_msgs/](samples/hybrid_package_msgs/) を参照。
+
+アクションについては意図的に alias を生成していない。ROS 1 は `Foo.action` を 7 つのフラットなメッセージ (`FooAction`, `FooGoal`, ...) に展開するが、ROS 2 は同じものを `Goal` / `Result` / `Feedback` をネストした単一のアクション型として表現する。すなわち alias 先となる `nav_msgs::msg::GetMapAction` は ROS 2 に存在しないため、これらの名前は生成対象から除外している。
+
+なお、ラッパーヘッダは alias を与えるだけで、alias 先のパッケージを連れてくるわけではない。利用するインターフェースパッケージは、本パッケージを使わない場合と同様に各パッケージ側で宣言する必要がある。`sensor_msgs/PointCloud2.h` が include できない環境では、`sensor_msgs` のラッパーヘッダがあっても意味を持たない。
 
 なお、生成するのは型の using-alias のみで、`SharedPtr` / `ConstSharedPtr` などのポインタ型メンバは定義していない。using-alias は既存の ROS 1 型に別名を与えるだけでメンバを追加できず、仮に別型として定義すると型の同一性が崩れて pub/sub や message-traits の特殊化と噛み合わなくなるためである。前述の通り、共用ロジック層ではメッセージのポインタを `std::shared_ptr<T>` もしくは `std::shared_ptr<const T>` で宣言し、ROS 1 インタフェース層で `sq_ros1_compat::to_std()` を介して変換することを推奨する。
 
