@@ -1,0 +1,23 @@
+name: release
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    uses: alpine-ros/alpine-ros-ci-workflows/.github/workflows/alpine-ros1-release.yaml@main
+    with:
+      release-ref: ${{ github.event.release.tag_name }}
+      source-branch: main
+      # The samples/ packages live in this repository for documentation
+      # only; release the compat package alone.
+      manifest-files: sq_ros1_rclcpp_compat/package.xml
+      rosdistro-fork-slug: sqbot/rosdistro1
+      git-user: sqbot
+      git-email: 30003564+sqbot@users.noreply.github.com
+      dry-run: false
+    secrets:
+      token: ${{ secrets.BLOOM_GITHUB_TOKEN }}
