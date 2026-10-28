@@ -2,6 +2,11 @@
 Changelog for package hybrid_package_pubsub_samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add Alpine ROS 1 release workflows (`#12 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/12>`_)
+* Contributors: Naotaka Hatao
+
 0.0.1 (2026-08-13)
 ------------------
 * Declare the ROS 1 catkin build_type in package.xml (`#7 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/7>`_)
