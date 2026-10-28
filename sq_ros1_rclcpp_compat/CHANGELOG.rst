@@ -2,6 +2,11 @@
 Changelog for package sq_ros1_rclcpp_compat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.0 (2026-10-28)
+------------------
+* Add Alpine ROS 1 release workflows (`#12 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/12>`_)
+* Contributors: Naotaka Hatao
+
 0.0.1 (2026-08-13)
 ------------------
 * rclcpp compat: reject Time(int, clock_type) at ROS 1 build time (`#11 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/11>`_)

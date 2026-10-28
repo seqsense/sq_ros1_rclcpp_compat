@@ -3,7 +3,7 @@
             schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>hybrid_imu_analyzer</name>
-  <version>0.0.1</version>
+  <version>0.1.0</version>
   <description>Hybrid ROS 1/ROS 2 IMU analyzer sample using compat libraries</description>
   <maintainer email="hatao.jsk@gmail.com">Naotaka Hatao</maintainer>
   <license>Apache-2.0</license>
