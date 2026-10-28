@@ -2,8 +2,8 @@
 Changelog for package hybrid_imu_analyzer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-10-28)
+------------------
 * Add Alpine ROS 1 release workflows (`#12 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/12>`_)
 * Contributors: Naotaka Hatao
 
