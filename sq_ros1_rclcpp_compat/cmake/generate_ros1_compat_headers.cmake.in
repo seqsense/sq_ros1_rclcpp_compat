@@ -9,6 +9,17 @@
 #     OUTPUT_DIR "${CATKIN_DEVEL_PREFIX}/include"
 #   )
 
+# catkin configures this template once per space. The devel space runs the
+# script from the source tree; the install space runs the copy installed next
+# to this file.
+if(@DEVELSPACE@)
+  set(_sq_ros1_rclcpp_compat_header_script
+      "@CMAKE_CURRENT_SOURCE_DIR@/cmake/generate_ros1_compat_header.py")
+else()
+  set(_sq_ros1_rclcpp_compat_header_script
+      "${CMAKE_CURRENT_LIST_DIR}/generate_ros1_compat_header.py")
+endif()
+
 function(generate_ros1_compat_headers)
   cmake_parse_arguments(ARG "" "PACKAGE;MSG_DIR;OUTPUT_DIR" "" ${ARGN})
 
@@ -21,9 +32,6 @@ function(generate_ros1_compat_headers)
   if(NOT ARG_OUTPUT_DIR)
     message(FATAL_ERROR "generate_ros1_compat_headers: OUTPUT_DIR is required")
   endif()
-
-  # Path embedded at configure time via CFG_EXTRAS .cmake.in template
-  set(_script "@CMAKE_CURRENT_SOURCE_DIR@/cmake/generate_ros1_compat_header.py")
 
   # Collect message names from .msg files
   file(GLOB _msg_files RELATIVE "${ARG_MSG_DIR}" "${ARG_MSG_DIR}/*.msg")
@@ -39,7 +47,7 @@ function(generate_ros1_compat_headers)
   endif()
 
   execute_process(
-    COMMAND "${PYTHON_EXECUTABLE}" "${_script}"
+    COMMAND "${PYTHON_EXECUTABLE}" "${_sq_ros1_rclcpp_compat_header_script}"
       --package "${ARG_PACKAGE}"
       --output-dir "${ARG_OUTPUT_DIR}"
       --messages ${_msg_names}

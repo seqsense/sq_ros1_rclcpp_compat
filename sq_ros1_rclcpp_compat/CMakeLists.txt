@@ -128,6 +128,10 @@ if($ENV{ROS_VERSION} EQUAL 1)
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
   install(DIRECTORY ${_COMPAT_INCLUDE_DIR}/
           DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+  # Run by generate_ros1_compat_headers() in packages that build against the
+  # installed package.
+  install(PROGRAMS cmake/generate_ros1_compat_header.py
+          DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake)
 
 elseif($ENV{ROS_VERSION} EQUAL 2)
   message(STATUS "Building sq_ros1_rclcpp_compat for ROS 2 (no-op)")
