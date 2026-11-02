@@ -2,6 +2,9 @@
 Changelog for package hybrid_package_pubsub_samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-11-02)
+------------------
+
 0.1.0 (2026-10-28)
 ------------------
 * Add Alpine ROS 1 release workflows (`#12 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/12>`_)
