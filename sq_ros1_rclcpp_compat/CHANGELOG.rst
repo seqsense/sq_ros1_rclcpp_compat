@@ -2,8 +2,8 @@
 Changelog for package sq_ros1_rclcpp_compat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2026-11-02)
+------------------
 * Install the header generator script for installed consumers (`#15 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/15>`_)
 * Contributors: Naotaka Hatao
 
