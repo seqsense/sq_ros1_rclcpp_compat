@@ -105,6 +105,10 @@ if($ENV{ROS_VERSION} EQUAL 1)
 
     add_rostest_gtest(test_compat_node test/test_compat_node.test test/test_compat_node.cpp)
     target_link_libraries(test_compat_node ${catkin_LIBRARIES})
+
+    catkin_add_gtest(test_compat_min_severity test/test_compat_min_severity.cpp)
+    target_link_libraries(test_compat_min_severity sq_ros1_rclcpp_compat_gtest_main
+                          ${catkin_LIBRARIES})
   endif()
 
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
