@@ -74,6 +74,8 @@ if($ENV{ROS_VERSION} EQUAL 1)
     ${_COMPAT_INCLUDE_DIR}
     LIBRARIES
     ${_COMPAT_EXPORT_LIBS}
+    CATKIN_DEPENDS
+    rosconsole
     CFG_EXTRAS
     generate_ros1_compat_headers.cmake
     preprocess_ros1_interfaces.cmake
