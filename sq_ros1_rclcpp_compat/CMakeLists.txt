@@ -4,17 +4,7 @@ project(sq_ros1_rclcpp_compat)
 if($ENV{ROS_VERSION} EQUAL 1)
   message(STATUS "Building sq_ros1_rclcpp_compat for ROS 1")
 
-  find_package(catkin REQUIRED COMPONENTS roscpp)
-  find_package(spdlog REQUIRED)
-  # Ubuntu 24.04+: spdlog uses external fmt (SPDLOG_FMT_EXTERNAL=1) and requires
-  # explicit linking against libfmt. Ubuntu 20.04 bundles fmt inside spdlog, so
-  # libfmt-dev is absent and find_package(fmt) would fail — use QUIET + guard.
-  find_package(fmt QUIET)
-  if(fmt_FOUND)
-    # Modern CMake's fmt does not set fmt_LIBRARIES; set it manually so that
-    # catkin_package(DEPENDS fmt) can propagate fmt::fmt to downstream packages.
-    set(fmt_LIBRARIES fmt::fmt)
-  endif()
+  find_package(catkin REQUIRED COMPONENTS roscpp rosconsole)
 
   # Auto-generate ROS 2-style compat headers for the core ROS 1 interfaces:
   # std_msgs, std_srvs, the common_msgs stack and tf2_msgs. Extend the list
@@ -78,19 +68,12 @@ if($ENV{ROS_VERSION} EQUAL 1)
     list(APPEND _COMPAT_EXPORT_LIBS sq_ros1_rclcpp_compat_gtest_main)
   endif()
 
-  set(_COMPAT_DEPENDS spdlog)
-  if(fmt_FOUND)
-    list(APPEND _COMPAT_DEPENDS fmt)
-  endif()
-
   catkin_package(
     INCLUDE_DIRS
     include
     ${_COMPAT_INCLUDE_DIR}
     LIBRARIES
     ${_COMPAT_EXPORT_LIBS}
-    DEPENDS
-    ${_COMPAT_DEPENDS}
     CFG_EXTRAS
     generate_ros1_compat_headers.cmake
     preprocess_ros1_interfaces.cmake
@@ -113,16 +96,11 @@ if($ENV{ROS_VERSION} EQUAL 1)
     install(TARGETS sq_ros1_rclcpp_compat_gtest_main
             ARCHIVE DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION})
 
-    set(_TEST_FMT_LIB "")
-    if(fmt_FOUND)
-      set(_TEST_FMT_LIB fmt::fmt)
-    endif()
-
     add_rostest_gtest(test_compat_basics test/test_compat_basics.test test/test_compat_basics.cpp)
-    target_link_libraries(test_compat_basics ${catkin_LIBRARIES} ${_TEST_FMT_LIB})
+    target_link_libraries(test_compat_basics ${catkin_LIBRARIES})
 
     add_rostest_gtest(test_compat_node test/test_compat_node.test test/test_compat_node.cpp)
-    target_link_libraries(test_compat_node ${catkin_LIBRARIES} ${_TEST_FMT_LIB})
+    target_link_libraries(test_compat_node ${catkin_LIBRARIES})
   endif()
 
   install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})

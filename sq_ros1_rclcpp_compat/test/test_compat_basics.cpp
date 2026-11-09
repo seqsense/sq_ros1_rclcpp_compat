@@ -13,9 +13,39 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
+#include <ros/console.h>
 #include <ros/ros.h>
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "rclcpp/rclcpp.hpp"
+
+namespace
+{
+
+class CapturingAppender : public ros::console::LogAppender
+{
+public:
+  void log(ros::console::Level level, const char * str, const char *, const char *, int) override
+  {
+    messages.emplace_back(level, str);
+  }
+
+  std::vector<std::pair<ros::console::Level, std::string>> messages;
+};
+
+class CompatLogging : public ::testing::Test
+{
+protected:
+  void SetUp() override { ros::console::register_appender(&appender_); }
+  void TearDown() override { ros::console::deregister_appender(&appender_); }
+
+  CapturingAppender appender_;
+};
+
+}  // namespace
 
 TEST(CompatLogger, GetLogger)
 {
@@ -23,14 +53,37 @@ TEST(CompatLogger, GetLogger)
   EXPECT_STREQ(logger.get_name(), "test_logger");
 }
 
-TEST(CompatLogger, LoggingMacros)
+TEST_F(CompatLogging, MacrosLogThroughRosconsole)
 {
   auto logger = rclcpp::get_logger("test_logger");
-  // Should not crash
   RCLCPP_INFO(logger, "info: %d", 1);
   RCLCPP_WARN(logger, "warn: %s", "hello");
   RCLCPP_ERROR(logger, "error: %.2f", 3.14);
-  RCLCPP_DEBUG(logger, "debug: %d", 42);
+
+  ASSERT_EQ(appender_.messages.size(), 3u);
+  EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Info);
+  EXPECT_EQ(appender_.messages[0].second, "info: 1");
+  EXPECT_EQ(appender_.messages[1].first, ros::console::levels::Warn);
+  EXPECT_EQ(appender_.messages[1].second, "warn: hello");
+  EXPECT_EQ(appender_.messages[2].first, ros::console::levels::Error);
+  EXPECT_EQ(appender_.messages[2].second, "error: 3.14");
+}
+
+TEST_F(CompatLogging, DebugFollowsRosconsoleLevel)
+{
+  auto logger = rclcpp::get_logger("test_logger");
+  RCLCPP_DEBUG(logger, "hidden");
+  EXPECT_TRUE(appender_.messages.empty());
+
+  ASSERT_TRUE(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug));
+  ros::console::notifyLoggerLevelsChanged();
+  RCLCPP_DEBUG(logger, "shown: %d", 2);
+  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+  ros::console::notifyLoggerLevelsChanged();
+
+  ASSERT_EQ(appender_.messages.size(), 1u);
+  EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Debug);
+  EXPECT_EQ(appender_.messages[0].second, "shown: 2");
 }
 
 TEST(CompatDuration, ConstructFromSecondsNanoseconds)

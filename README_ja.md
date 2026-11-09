@@ -48,12 +48,14 @@ ROS メッセージについて、ROS 1 の generator が生成するポイン�
 
 | 提供物 | 説明 |
 |-------|------|
-| `rclcpp::Logger` | バックエンドは `spdlog` |
+| `rclcpp::Logger` | 出力は `rosconsole` を通る (下記注記) |
 | `RCLCPP_DEBUG/INFO/WARN/ERROR` / 各 `_THROTTLE` 版 | throttle は `std::chrono::steady_clock` ベース |
 | `rclcpp::Clock` / `Time` / `Duration` | 時刻・時間 (時計種別ごとのバックエンドは下記注記) |
 | `rclcpp::Node` | パラメータ API と `get_logger()` / `now()` / `get_name()` などの最小限の helper。pub/sub など ROS 2 のノード機能は持たない |
 
 `rclcpp::Clock` のバックエンドは時計種別で異なる: `RCL_ROS_TIME` は `ros::Time`、`RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` は `ros::WallTime`。ただし `ros::WallTime` は Wall Clock であるため、`RCL_STEADY_TIME` を指定しても単調増加は保証されない点に注意。
+
+`RCLCPP_*` マクロは、同じパッケージの `ROS_*` と同じく `rosconsole` を通して出力する。そのため `/rosout` に流れ、`WARN` 以上は stderr に出て、レベルは rosconsole の設定やノードの `set_logger_level` サービスに従う。rosconsole のロガーは `rclcpp::Logger` の名前ではなくパッケージ既定のもの (`ros.<パッケージ名>`) を使う。rosconsole は呼び出し箇所ごとに、最初に実行されたときの名前でロガーを固定するためである。`rclcpp::Logger` の名前は `get_name()` で取れるだけになる。
 
 #### ROS 1 / ROS 2 のメッセージヘッダ整合
 

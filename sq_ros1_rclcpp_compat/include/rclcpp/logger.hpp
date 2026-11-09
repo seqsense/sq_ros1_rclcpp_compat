@@ -15,29 +15,22 @@
 #ifndef RCLCPP__LOGGER_HPP_
 #define RCLCPP__LOGGER_HPP_
 
-#include <spdlog/spdlog.h>
-
-#include <memory>
 #include <string>
 
 namespace rclcpp
 {
 
+// The name is kept for get_name() only. Output goes to the rosconsole logger of
+// the calling package (see rclcpp/logging.hpp), not to a logger of this name.
 class Logger
 {
 public:
-  explicit Logger(const std::string & name) : spdlog_logger_(spdlog::default_logger()->clone(name))
-  {
-    spdlog_logger_->set_pattern("[%l] [%E.%f] [%n]: %v");
-    spdlog_logger_->flush_on(spdlog::level::warn);
-  }
+  explicit Logger(const std::string & name) : name_(name) {}
 
-  const char * get_name() const { return spdlog_logger_->name().c_str(); }
-
-  std::shared_ptr<spdlog::logger> get_spdlog_logger() const { return spdlog_logger_; }
+  const char * get_name() const { return name_.c_str(); }
 
 private:
-  std::shared_ptr<spdlog::logger> spdlog_logger_;
+  std::string name_;
 };
 
 inline Logger get_logger(const std::string & name) { return Logger(name); }
