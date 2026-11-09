@@ -22,28 +22,29 @@
 
 #include "rclcpp/logger.hpp"
 
-// Output goes through rosconsole, exactly as a ROS_* call in the same package
-// would: it reaches /rosout, WARN and above go to stderr, and the level can be
-// changed with rosconsole config or the node's set_logger_level service.
+// Each macro expands to the matching ROS_* macro, so it behaves exactly as a
+// ROS_* call in the same package: it reaches /rosout, WARN and above go to
+// stderr, the level follows rosconsole config and the node's set_logger_level
+// service, and ROSCONSOLE_MIN_SEVERITY compiles it out.
 //
-// The rosconsole logger is ROSCONSOLE_DEFAULT_NAME rather than one named after
-// the rclcpp::Logger, because rosconsole binds a logger name to each call site
-// the first time it runs. Two instances logging from the same line under
-// different names would both end up under whichever name came first.
-#define RCLCPP_COMPAT_LOG_(level, logger, ...)                                                 \
+// The rosconsole logger is therefore ROSCONSOLE_DEFAULT_NAME rather than one
+// named after the rclcpp::Logger. rosconsole binds a logger name to each call
+// site the first time it runs, so two instances logging from the same line
+// under different names would both end up under whichever name came first.
+#define RCLCPP_COMPAT_LOG_(ros_macro, logger, ...)                                             \
   do {                                                                                         \
     static_assert(                                                                             \
       std::is_same<                                                                            \
         typename std::remove_cv<typename std::remove_reference<decltype(logger)>::type>::type, \
         ::rclcpp::Logger>::value,                                                              \
       "First argument to logging macros must be an rclcpp::Logger");                           \
-    ROS_LOG(::ros::console::levels::level, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__);              \
+    ros_macro(__VA_ARGS__);                                                                    \
   } while (0)
 
-#define RCLCPP_DEBUG(logger, ...) RCLCPP_COMPAT_LOG_(Debug, logger, __VA_ARGS__)
-#define RCLCPP_INFO(logger, ...) RCLCPP_COMPAT_LOG_(Info, logger, __VA_ARGS__)
-#define RCLCPP_WARN(logger, ...) RCLCPP_COMPAT_LOG_(Warn, logger, __VA_ARGS__)
-#define RCLCPP_ERROR(logger, ...) RCLCPP_COMPAT_LOG_(Error, logger, __VA_ARGS__)
+#define RCLCPP_DEBUG(logger, ...) RCLCPP_COMPAT_LOG_(ROS_DEBUG, logger, __VA_ARGS__)
+#define RCLCPP_INFO(logger, ...) RCLCPP_COMPAT_LOG_(ROS_INFO, logger, __VA_ARGS__)
+#define RCLCPP_WARN(logger, ...) RCLCPP_COMPAT_LOG_(ROS_WARN, logger, __VA_ARGS__)
+#define RCLCPP_ERROR(logger, ...) RCLCPP_COMPAT_LOG_(ROS_ERROR, logger, __VA_ARGS__)
 
 // THROTTLE variants — clock argument is accepted but ignored; uses wall-clock throttling.
 // period_ms is in milliseconds to match ROS 2 API. The first call always logs.
