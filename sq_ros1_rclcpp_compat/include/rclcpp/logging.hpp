@@ -46,57 +46,29 @@
 #define RCLCPP_ERROR(logger, ...) RCLCPP_COMPAT_LOG_(Error, logger, __VA_ARGS__)
 
 // THROTTLE variants — clock argument is accepted but ignored; uses wall-clock throttling.
-// period_ms is in milliseconds to match ROS 2 API.
-#define RCLCPP_DEBUG_THROTTLE(logger, clock, period_ms, ...)                        \
-  do {                                                                              \
-    static auto _rclcpp_compat_last = std::chrono::steady_clock::time_point::min(); \
-    auto _rclcpp_compat_now = std::chrono::steady_clock::now();                     \
-    if (                                                                            \
-      std::chrono::duration_cast<std::chrono::milliseconds>(                        \
-        _rclcpp_compat_now - _rclcpp_compat_last)                                   \
-        .count() >= (period_ms)) {                                                  \
-      _rclcpp_compat_last = _rclcpp_compat_now;                                     \
-      RCLCPP_DEBUG(logger, __VA_ARGS__);                                            \
-    }                                                                               \
+// period_ms is in milliseconds to match ROS 2 API. The first call always logs.
+#define RCLCPP_COMPAT_THROTTLE_(log_macro, logger, period_ms, ...)                     \
+  do {                                                                                 \
+    static bool _rclcpp_compat_logged = false;                                         \
+    static std::chrono::steady_clock::time_point _rclcpp_compat_last;                  \
+    const auto _rclcpp_compat_now = std::chrono::steady_clock::now();                  \
+    if (                                                                               \
+      !_rclcpp_compat_logged || std::chrono::duration_cast<std::chrono::milliseconds>( \
+                                  _rclcpp_compat_now - _rclcpp_compat_last)            \
+                                    .count() >= (period_ms)) {                         \
+      _rclcpp_compat_logged = true;                                                    \
+      _rclcpp_compat_last = _rclcpp_compat_now;                                        \
+      log_macro(logger, __VA_ARGS__);                                                  \
+    }                                                                                  \
   } while (0)
 
-#define RCLCPP_INFO_THROTTLE(logger, clock, period_ms, ...)                         \
-  do {                                                                              \
-    static auto _rclcpp_compat_last = std::chrono::steady_clock::time_point::min(); \
-    auto _rclcpp_compat_now = std::chrono::steady_clock::now();                     \
-    if (                                                                            \
-      std::chrono::duration_cast<std::chrono::milliseconds>(                        \
-        _rclcpp_compat_now - _rclcpp_compat_last)                                   \
-        .count() >= (period_ms)) {                                                  \
-      _rclcpp_compat_last = _rclcpp_compat_now;                                     \
-      RCLCPP_INFO(logger, __VA_ARGS__);                                             \
-    }                                                                               \
-  } while (0)
-
-#define RCLCPP_WARN_THROTTLE(logger, clock, period_ms, ...)                         \
-  do {                                                                              \
-    static auto _rclcpp_compat_last = std::chrono::steady_clock::time_point::min(); \
-    auto _rclcpp_compat_now = std::chrono::steady_clock::now();                     \
-    if (                                                                            \
-      std::chrono::duration_cast<std::chrono::milliseconds>(                        \
-        _rclcpp_compat_now - _rclcpp_compat_last)                                   \
-        .count() >= (period_ms)) {                                                  \
-      _rclcpp_compat_last = _rclcpp_compat_now;                                     \
-      RCLCPP_WARN(logger, __VA_ARGS__);                                             \
-    }                                                                               \
-  } while (0)
-
-#define RCLCPP_ERROR_THROTTLE(logger, clock, period_ms, ...)                        \
-  do {                                                                              \
-    static auto _rclcpp_compat_last = std::chrono::steady_clock::time_point::min(); \
-    auto _rclcpp_compat_now = std::chrono::steady_clock::now();                     \
-    if (                                                                            \
-      std::chrono::duration_cast<std::chrono::milliseconds>(                        \
-        _rclcpp_compat_now - _rclcpp_compat_last)                                   \
-        .count() >= (period_ms)) {                                                  \
-      _rclcpp_compat_last = _rclcpp_compat_now;                                     \
-      RCLCPP_ERROR(logger, __VA_ARGS__);                                            \
-    }                                                                               \
-  } while (0)
+#define RCLCPP_DEBUG_THROTTLE(logger, clock, period_ms, ...) \
+  RCLCPP_COMPAT_THROTTLE_(RCLCPP_DEBUG, logger, period_ms, __VA_ARGS__)
+#define RCLCPP_INFO_THROTTLE(logger, clock, period_ms, ...) \
+  RCLCPP_COMPAT_THROTTLE_(RCLCPP_INFO, logger, period_ms, __VA_ARGS__)
+#define RCLCPP_WARN_THROTTLE(logger, clock, period_ms, ...) \
+  RCLCPP_COMPAT_THROTTLE_(RCLCPP_WARN, logger, period_ms, __VA_ARGS__)
+#define RCLCPP_ERROR_THROTTLE(logger, clock, period_ms, ...) \
+  RCLCPP_COMPAT_THROTTLE_(RCLCPP_ERROR, logger, period_ms, __VA_ARGS__)
 
 #endif  // RCLCPP__LOGGING_HPP_

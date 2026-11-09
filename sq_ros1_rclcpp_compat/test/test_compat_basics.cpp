@@ -16,7 +16,9 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 
+#include <chrono>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -84,6 +86,23 @@ TEST_F(CompatLogging, DebugFollowsRosconsoleLevel)
   ASSERT_EQ(appender_.messages.size(), 1u);
   EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Debug);
   EXPECT_EQ(appender_.messages[0].second, "shown: 2");
+}
+
+TEST_F(CompatLogging, ThrottleLogsFirstCallAndAfterPeriod)
+{
+  auto logger = rclcpp::get_logger("test_logger");
+  rclcpp::Clock clock(RCL_STEADY_TIME);
+  for (int i = 0; i < 3; ++i) {
+    if (i == 2) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    }
+    RCLCPP_WARN_THROTTLE(logger, clock, 1000, "throttled: %d", i);
+  }
+
+  ASSERT_EQ(appender_.messages.size(), 2u);
+  EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Warn);
+  EXPECT_EQ(appender_.messages[0].second, "throttled: 0");
+  EXPECT_EQ(appender_.messages[1].second, "throttled: 2");
 }
 
 TEST(CompatDuration, ConstructFromSecondsNanoseconds)
