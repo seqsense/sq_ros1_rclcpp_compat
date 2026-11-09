@@ -15,9 +15,9 @@
 #include <gtest/gtest.h>
 #include <ros/console.h>
 #include <ros/ros.h>
+#include <rosgraph_msgs/Log.h>
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
@@ -25,24 +25,45 @@
 namespace
 {
 
-class CapturingAppender : public ros::console::LogAppender
-{
-public:
-  void log(ros::console::Level level, const char * str, const char *, const char *, int) override
-  {
-    messages.emplace_back(level, str);
-  }
-
-  std::vector<std::pair<ros::console::Level, std::string>> messages;
-};
-
+// Checks what reaches /rosout rather than registering a rosconsole appender:
+// on Noetic, deregister_appender() double-frees the appender and holds only
+// one, so it would also detach roscpp's own /rosout appender.
 class CompatLogging : public ::testing::Test
 {
 protected:
-  void SetUp() override { ros::console::register_appender(&appender_); }
-  void TearDown() override { ros::console::deregister_appender(&appender_); }
+  void SetUp() override
+  {
+    sub_ = nh_.subscribe("/rosout", 100, &CompatLogging::onLog, this);
+    const ros::WallTime deadline = ros::WallTime::now() + ros::WallDuration(10.0);
+    while (sub_.getNumPublishers() == 0 && ros::WallTime::now() < deadline) {
+      ros::WallDuration(0.01).sleep();
+    }
+    ASSERT_GT(sub_.getNumPublishers(), 0u);
+  }
 
-  CapturingAppender appender_;
+  void waitForMessages(size_t count)
+  {
+    const ros::WallTime deadline = ros::WallTime::now() + ros::WallDuration(10.0);
+    while (messages_.size() < count && ros::WallTime::now() < deadline) {
+      ros::spinOnce();
+      ros::WallDuration(0.01).sleep();
+    }
+  }
+
+  std::vector<rosgraph_msgs::Log> messages_;
+
+private:
+  void onLog(const rosgraph_msgs::Log::ConstPtr & msg)
+  {
+    if (
+      msg->name == ros::this_node::getName() &&
+      msg->file.find("test_compat_basics") != std::string::npos) {
+      messages_.push_back(*msg);
+    }
+  }
+
+  ros::NodeHandle nh_;
+  ros::Subscriber sub_;
 };
 
 }  // namespace
@@ -53,37 +74,39 @@ TEST(CompatLogger, GetLogger)
   EXPECT_STREQ(logger.get_name(), "test_logger");
 }
 
-TEST_F(CompatLogging, MacrosLogThroughRosconsole)
+TEST_F(CompatLogging, MacrosLogToRosout)
 {
   auto logger = rclcpp::get_logger("test_logger");
   RCLCPP_INFO(logger, "info: %d", 1);
   RCLCPP_WARN(logger, "warn: %s", "hello");
   RCLCPP_ERROR(logger, "error: %.2f", 3.14);
+  waitForMessages(3);
 
-  ASSERT_EQ(appender_.messages.size(), 3u);
-  EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Info);
-  EXPECT_EQ(appender_.messages[0].second, "info: 1");
-  EXPECT_EQ(appender_.messages[1].first, ros::console::levels::Warn);
-  EXPECT_EQ(appender_.messages[1].second, "warn: hello");
-  EXPECT_EQ(appender_.messages[2].first, ros::console::levels::Error);
-  EXPECT_EQ(appender_.messages[2].second, "error: 3.14");
+  ASSERT_EQ(messages_.size(), 3u);
+  EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::INFO);
+  EXPECT_EQ(messages_[0].msg, "info: 1");
+  EXPECT_EQ(messages_[1].level, rosgraph_msgs::Log::WARN);
+  EXPECT_EQ(messages_[1].msg, "warn: hello");
+  EXPECT_EQ(messages_[2].level, rosgraph_msgs::Log::ERROR);
+  EXPECT_EQ(messages_[2].msg, "error: 3.14");
 }
 
 TEST_F(CompatLogging, DebugFollowsRosconsoleLevel)
 {
   auto logger = rclcpp::get_logger("test_logger");
   RCLCPP_DEBUG(logger, "hidden");
-  EXPECT_TRUE(appender_.messages.empty());
 
   ASSERT_TRUE(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug));
   ros::console::notifyLoggerLevelsChanged();
   RCLCPP_DEBUG(logger, "shown: %d", 2);
   ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
   ros::console::notifyLoggerLevelsChanged();
+  waitForMessages(1);
 
-  ASSERT_EQ(appender_.messages.size(), 1u);
-  EXPECT_EQ(appender_.messages[0].first, ros::console::levels::Debug);
-  EXPECT_EQ(appender_.messages[0].second, "shown: 2");
+  // /rosout keeps the order, so a published "hidden" would come first.
+  ASSERT_EQ(messages_.size(), 1u);
+  EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::DEBUG);
+  EXPECT_EQ(messages_[0].msg, "shown: 2");
 }
 
 TEST(CompatDuration, ConstructFromSecondsNanoseconds)

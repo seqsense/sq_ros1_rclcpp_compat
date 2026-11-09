@@ -83,7 +83,9 @@ if($ENV{ROS_VERSION} EQUAL 1)
 
   if(CATKIN_ENABLE_TESTING)
     find_package(rostest REQUIRED)
+    find_package(rosgraph_msgs REQUIRED)
     find_package(GTest REQUIRED)
+    include_directories(${rosgraph_msgs_INCLUDE_DIRS})
 
     # gtest_main equivalent for downstream tests. catkin_add_gtest does
     # not link gtest_main, so packages either roll their own main() or
