@@ -2,6 +2,12 @@
 Changelog for package sq_ros1_rclcpp_compat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.0 (2026-11-10)
+------------------
+* Make RCLCPP\_*_THROTTLE log on the first call and after each period (`#19 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/19>`_)
+* Log through rosconsole instead of spdlog on ROS 1 (`#18 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/18>`_)
+* Contributors: Naotaka Hatao
+
 0.1.1 (2026-11-02)
 ------------------
 * Install the header generator script for installed consumers (`#15 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/15>`_)
