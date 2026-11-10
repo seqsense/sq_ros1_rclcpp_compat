@@ -47,12 +47,14 @@ Provides the rclcpp API used by the logic layer on ROS 1. Headers live under [sq
 
 | Provides | Notes |
 |----------|-------|
-| `rclcpp::Logger` | Backed by `spdlog` |
+| `rclcpp::Logger` | Output goes through `rosconsole` (see below) |
 | `RCLCPP_DEBUG/INFO/WARN/ERROR` and each `_THROTTLE` variant | Throttle is based on `std::chrono::steady_clock` |
 | `rclcpp::Clock` / `Time` / `Duration` | Time / duration (per-clock-type backend noted below) |
 | `rclcpp::Node` | Parameter API plus minimal helpers (`get_logger()` / `now()` / `get_name()`); no ROS 2 node functionality such as pub/sub |
 
 The `rclcpp::Clock` backend depends on the clock type: `RCL_ROS_TIME` uses `ros::Time`, while `RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` use `ros::WallTime`. Note that `ros::WallTime` is a wall clock, so — unlike the real rclcpp — `RCL_STEADY_TIME` does not guarantee monotonicity.
+
+The `RCLCPP_*` macros log through `rosconsole`, exactly as a `ROS_*` call in the same package would: messages reach `/rosout`, `WARN` and above go to stderr, and levels follow the rosconsole configuration and the node's `set_logger_level` service. The rosconsole logger is the package's default one (`ros.<package>`), not one named after the `rclcpp::Logger`, because rosconsole binds a logger name to each call site on its first use; the `rclcpp::Logger` name is available only through `get_name()`.
 
 #### ROS 1 / ROS 2 message-header alignment
 

@@ -15,40 +15,36 @@
 #ifndef RCLCPP__LOGGING_HPP_
 #define RCLCPP__LOGGING_HPP_
 
-#include <spdlog/spdlog.h>
+#include <ros/console.h>
 
 #include <chrono>
-#include <cstdio>
+#include <type_traits>
 
 #include "rclcpp/logger.hpp"
 
-#define RCLCPP_DEBUG(logger, ...)                                               \
-  do {                                                                          \
-    char _rclcpp_compat_buf[2048];                                              \
-    std::snprintf(_rclcpp_compat_buf, sizeof(_rclcpp_compat_buf), __VA_ARGS__); \
-    (logger).get_spdlog_logger()->debug(_rclcpp_compat_buf);                    \
+// Each macro expands to the matching ROS_* macro, so it behaves exactly as a
+// ROS_* call in the same package: it reaches /rosout, WARN and above go to
+// stderr, the level follows rosconsole config and the node's set_logger_level
+// service, and ROSCONSOLE_MIN_SEVERITY compiles it out.
+//
+// The rosconsole logger is therefore ROSCONSOLE_DEFAULT_NAME rather than one
+// named after the rclcpp::Logger. rosconsole binds a logger name to each call
+// site the first time it runs, so two instances logging from the same line
+// under different names would both end up under whichever name came first.
+#define RCLCPP_COMPAT_LOG_(ros_macro, logger, ...)                                             \
+  do {                                                                                         \
+    static_assert(                                                                             \
+      std::is_same<                                                                            \
+        typename std::remove_cv<typename std::remove_reference<decltype(logger)>::type>::type, \
+        ::rclcpp::Logger>::value,                                                              \
+      "First argument to logging macros must be an rclcpp::Logger");                           \
+    ros_macro(__VA_ARGS__);                                                                    \
   } while (0)
 
-#define RCLCPP_INFO(logger, ...)                                                \
-  do {                                                                          \
-    char _rclcpp_compat_buf[2048];                                              \
-    std::snprintf(_rclcpp_compat_buf, sizeof(_rclcpp_compat_buf), __VA_ARGS__); \
-    (logger).get_spdlog_logger()->info(_rclcpp_compat_buf);                     \
-  } while (0)
-
-#define RCLCPP_WARN(logger, ...)                                                \
-  do {                                                                          \
-    char _rclcpp_compat_buf[2048];                                              \
-    std::snprintf(_rclcpp_compat_buf, sizeof(_rclcpp_compat_buf), __VA_ARGS__); \
-    (logger).get_spdlog_logger()->warn(_rclcpp_compat_buf);                     \
-  } while (0)
-
-#define RCLCPP_ERROR(logger, ...)                                               \
-  do {                                                                          \
-    char _rclcpp_compat_buf[2048];                                              \
-    std::snprintf(_rclcpp_compat_buf, sizeof(_rclcpp_compat_buf), __VA_ARGS__); \
-    (logger).get_spdlog_logger()->error(_rclcpp_compat_buf);                    \
-  } while (0)
+#define RCLCPP_DEBUG(logger, ...) RCLCPP_COMPAT_LOG_(ROS_DEBUG, logger, __VA_ARGS__)
+#define RCLCPP_INFO(logger, ...) RCLCPP_COMPAT_LOG_(ROS_INFO, logger, __VA_ARGS__)
+#define RCLCPP_WARN(logger, ...) RCLCPP_COMPAT_LOG_(ROS_WARN, logger, __VA_ARGS__)
+#define RCLCPP_ERROR(logger, ...) RCLCPP_COMPAT_LOG_(ROS_ERROR, logger, __VA_ARGS__)
 
 // THROTTLE variants — clock argument is accepted but ignored; uses wall-clock throttling.
 // period_ms is in milliseconds to match ROS 2 API.

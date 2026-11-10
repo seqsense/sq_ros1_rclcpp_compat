@@ -13,9 +13,60 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
+#include <ros/console.h>
 #include <ros/ros.h>
+#include <rosgraph_msgs/Log.h>
+
+#include <string>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
+
+namespace
+{
+
+// Checks what reaches /rosout rather than registering a rosconsole appender:
+// on Noetic, deregister_appender() double-frees the appender and holds only
+// one, so it would also detach roscpp's own /rosout appender.
+class CompatLogging : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    sub_ = nh_.subscribe("/rosout", 100, &CompatLogging::onLog, this);
+    const ros::WallTime deadline = ros::WallTime::now() + ros::WallDuration(10.0);
+    while (sub_.getNumPublishers() == 0 && ros::WallTime::now() < deadline) {
+      ros::WallDuration(0.01).sleep();
+    }
+    ASSERT_GT(sub_.getNumPublishers(), 0u);
+  }
+
+  void waitForMessages(size_t count)
+  {
+    const ros::WallTime deadline = ros::WallTime::now() + ros::WallDuration(10.0);
+    while (messages_.size() < count && ros::WallTime::now() < deadline) {
+      ros::spinOnce();
+      ros::WallDuration(0.01).sleep();
+    }
+  }
+
+  std::vector<rosgraph_msgs::Log> messages_;
+
+private:
+  void onLog(const rosgraph_msgs::Log::ConstPtr & msg)
+  {
+    if (
+      msg->name == ros::this_node::getName() &&
+      msg->file.find("test_compat_basics") != std::string::npos) {
+      messages_.push_back(*msg);
+    }
+  }
+
+  ros::NodeHandle nh_;
+  ros::Subscriber sub_;
+};
+
+}  // namespace
 
 TEST(CompatLogger, GetLogger)
 {
@@ -23,14 +74,39 @@ TEST(CompatLogger, GetLogger)
   EXPECT_STREQ(logger.get_name(), "test_logger");
 }
 
-TEST(CompatLogger, LoggingMacros)
+TEST_F(CompatLogging, MacrosLogToRosout)
 {
   auto logger = rclcpp::get_logger("test_logger");
-  // Should not crash
   RCLCPP_INFO(logger, "info: %d", 1);
   RCLCPP_WARN(logger, "warn: %s", "hello");
   RCLCPP_ERROR(logger, "error: %.2f", 3.14);
-  RCLCPP_DEBUG(logger, "debug: %d", 42);
+  waitForMessages(3);
+
+  ASSERT_EQ(messages_.size(), 3u);
+  EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::INFO);
+  EXPECT_EQ(messages_[0].msg, "info: 1");
+  EXPECT_EQ(messages_[1].level, rosgraph_msgs::Log::WARN);
+  EXPECT_EQ(messages_[1].msg, "warn: hello");
+  EXPECT_EQ(messages_[2].level, rosgraph_msgs::Log::ERROR);
+  EXPECT_EQ(messages_[2].msg, "error: 3.14");
+}
+
+TEST_F(CompatLogging, DebugFollowsRosconsoleLevel)
+{
+  auto logger = rclcpp::get_logger("test_logger");
+  RCLCPP_DEBUG(logger, "hidden");
+
+  ASSERT_TRUE(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug));
+  ros::console::notifyLoggerLevelsChanged();
+  RCLCPP_DEBUG(logger, "shown: %d", 2);
+  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+  ros::console::notifyLoggerLevelsChanged();
+  waitForMessages(1);
+
+  // /rosout keeps the order, so a published "hidden" would come first.
+  ASSERT_EQ(messages_.size(), 1u);
+  EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::DEBUG);
+  EXPECT_EQ(messages_[0].msg, "shown: 2");
 }
 
 TEST(CompatDuration, ConstructFromSecondsNanoseconds)

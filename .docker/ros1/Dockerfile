@@ -42,7 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     less \
     libeigen3-dev \
-    libspdlog-dev \
     python3-catkin-tools \
     python3-osrf-pycommon \
     python3-pip \
