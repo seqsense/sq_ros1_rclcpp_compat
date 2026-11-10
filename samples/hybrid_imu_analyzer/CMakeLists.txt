@@ -23,7 +23,11 @@ if($ENV{ROS_VERSION} EQUAL 1)
   target_link_libraries(imu_analyzer_node hybrid_imu_analyzer ${catkin_LIBRARIES})
   add_dependencies(imu_analyzer_node ${catkin_EXPORTED_TARGETS})
 
-  install(TARGETS imu_analyzer_node
+  # The library is shared (catkin's default), so it must be installed for the
+  # node to run.
+  install(TARGETS hybrid_imu_analyzer imu_analyzer_node
+          ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+          LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
           RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
   if(CATKIN_ENABLE_TESTING)

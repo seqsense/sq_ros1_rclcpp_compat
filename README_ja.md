@@ -55,6 +55,8 @@ ROS メッセージについて、ROS 1 の generator が生成するポイン�
 
 `rclcpp::Clock` のバックエンドは時計種別で異なる: `RCL_ROS_TIME` は `ros::Time`、`RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` は `ros::WallTime`。ただし `ros::WallTime` は Wall Clock であるため、`RCL_STEADY_TIME` を指定しても単調増加は保証されない点に注意。
 
+`ros::Time` が未初期化のとき (`ros::init()` も `ros::Time::init()` も呼ばれていない素の gtest など)、`rclcpp::Clock(RCL_ROS_TIME).now()` は `ros::Time::init()` を呼んでシステム時刻を返す。sim time を使わない rclcpp の ROS clock と同じ振る舞いである。その後の `ros::start()` では `/use_sim_time` が通常どおり反映される。
+
 `RCLCPP_*` マクロは、同じパッケージの `ROS_*` と同じく `rosconsole` を通して出力する。そのため `/rosout` に流れ、`WARN` 以上は stderr に出て、レベルは rosconsole の設定やノードの `set_logger_level` サービスに従う。rosconsole のロガーは `rclcpp::Logger` の名前ではなくパッケージ既定のもの (`ros.<パッケージ名>`) を使う。rosconsole は呼び出し箇所ごとに、最初に実行されたときの名前でロガーを固定するためである。`rclcpp::Logger` の名前は `get_name()` で取れるだけになる。
 
 #### ROS 1 / ROS 2 のメッセージヘッダ整合

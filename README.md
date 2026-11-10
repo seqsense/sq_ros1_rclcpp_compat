@@ -54,6 +54,8 @@ Provides the rclcpp API used by the logic layer on ROS 1. Headers live under [sq
 
 The `rclcpp::Clock` backend depends on the clock type: `RCL_ROS_TIME` uses `ros::Time`, while `RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` use `ros::WallTime`. Note that `ros::WallTime` is a wall clock, so — unlike the real rclcpp — `RCL_STEADY_TIME` does not guarantee monotonicity.
 
+If `ros::Time` is not initialized yet (no `ros::init()` or `ros::Time::init()`, as in a plain gtest), `rclcpp::Clock(RCL_ROS_TIME).now()` calls `ros::Time::init()` and returns the system time, as rclcpp's ROS clock does without sim time. `ros::start()` still applies `/use_sim_time` afterwards.
+
 The `RCLCPP_*` macros log through `rosconsole`, exactly as a `ROS_*` call in the same package would: messages reach `/rosout`, `WARN` and above go to stderr, and levels follow the rosconsole configuration and the node's `set_logger_level` service. The rosconsole logger is the package's default one (`ros.<package>`), not one named after the `rclcpp::Logger`, because rosconsole binds a logger name to each call site on its first use; the `rclcpp::Logger` name is available only through `get_name()`.
 
 #### ROS 1 / ROS 2 message-header alignment

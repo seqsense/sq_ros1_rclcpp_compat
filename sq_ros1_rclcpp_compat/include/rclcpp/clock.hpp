@@ -178,7 +178,15 @@ public:
   Time now() const
   {
     if (type_ == RCL_ROS_TIME) {
-      return Time(ros::Time::now(), RCL_ROS_TIME);
+      try {
+        return Time(ros::Time::now(), RCL_ROS_TIME);
+      } catch (const ros::TimeNotInitializedException &) {
+        // Before ros::init() / ros::Time::init(), as in a plain gtest. Like
+        // rclcpp's ROS clock without sim time, fall back to the system clock.
+        // ros::start() still applies /use_sim_time later.
+        ros::Time::init();
+        return Time(ros::Time::now(), RCL_ROS_TIME);
+      }
     }
     // RCL_SYSTEM_TIME / RCL_STEADY_TIME -> ros::WallTime
     const ros::WallTime wt = ros::WallTime::now();
