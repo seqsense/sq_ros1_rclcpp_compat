@@ -2,6 +2,9 @@
 Changelog for package hybrid_imu_analyzer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.1 (2026-11-02)
 ------------------
 

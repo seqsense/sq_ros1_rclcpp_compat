@@ -2,6 +2,9 @@
 Changelog for package hybrid_package_pubsub_samples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.1 (2026-11-02)
 ------------------
 
