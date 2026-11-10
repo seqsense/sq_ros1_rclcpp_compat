@@ -14,17 +14,21 @@
 
 // gtest main for ROS 1 tests using sq_ros1_rclcpp_compat.
 //
-// catkin_add_gtest does not link gtest_main on Ubuntu; tests link this instead.
-// ros::Time::init() is not called here but in gtest_ros_time_init.cpp, because
-// this main() is not used where another main() is linked first (e.g. Alpine,
-// where catkin_add_gtest links the system libgmock_main).
+// catkin_add_gtest does not link gtest_main; tests link this instead.
+// Also calls ros::Time::init() before RUN_ALL_TESTS so Clock(RCL_ROS_TIME).now() works.
+//
+// Tests link with:
+//   target_link_libraries(<test> <logic_lib> sq_ros1_rclcpp_compat_gtest_main
+//                         ${catkin_LIBRARIES})
 //
 // On ROS 2, ament_add_gtest already supplies gtest_main, so this is not needed there.
 
 #include <gtest/gtest.h>
+#include <ros/time.h>
 
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
+  ros::Time::init();
   return RUN_ALL_TESTS();
 }

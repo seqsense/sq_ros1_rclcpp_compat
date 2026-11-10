@@ -55,6 +55,8 @@ ROS メッセージについて、ROS 1 の generator が生成するポイン�
 
 `rclcpp::Clock` のバックエンドは時計種別で異なる: `RCL_ROS_TIME` は `ros::Time`、`RCL_SYSTEM_TIME` / `RCL_STEADY_TIME` は `ros::WallTime`。ただし `ros::WallTime` は Wall Clock であるため、`RCL_STEADY_TIME` を指定しても単調増加は保証されない点に注意。
 
+`ros::Time` が未初期化のとき (`ros::init()` も `ros::Time::init()` も呼ばれていない素の gtest など)、`rclcpp::Clock(RCL_ROS_TIME).now()` は `ros::Time::init()` を呼んでシステム時刻を返す。sim time を使わない rclcpp の ROS clock と同じ振る舞いである。その後の `ros::start()` では `/use_sim_time` が通常どおり反映される。
+
 `RCLCPP_*` マクロは、同じパッケージの `ROS_*` と同じく `rosconsole` を通して出力する。そのため `/rosout` に流れ、`WARN` 以上は stderr に出て、レベルは rosconsole の設定やノードの `set_logger_level` サービスに従う。rosconsole のロガーは `rclcpp::Logger` の名前ではなくパッケージ既定のもの (`ros.<パッケージ名>`) を使う。rosconsole は呼び出し箇所ごとに、最初に実行されたときの名前でロガーを固定するためである。`rclcpp::Logger` の名前は `get_name()` で取れるだけになる。
 
 #### ROS 1 / ROS 2 のメッセージヘッダ整合
@@ -116,7 +118,7 @@ add_message_files(DIRECTORY ${ROS1_MSG_DIR} FILES ${MSG_FILES})
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。`ros::Time::init()` は static initializer で呼ばれるため、`catkin_add_gtest` が別の `main()` をリンクする環境 (Alpine ではシステムの `libgmock_main`) でも呼ばれる。このライブラリは `CATKIN_ENABLE_TESTING` が有効なとき (テストビルド時) にのみビルド・export されるが、その際は `${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
+ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。このライブラリは `CATKIN_ENABLE_TESTING` が有効なとき (テストビルド時) にのみビルド・export されるが、その際は `${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
 
 ROS 2 では `ament_add_gtest` が `gtest_main` を提供するため、上記のような仕組みは必要ない。
 
