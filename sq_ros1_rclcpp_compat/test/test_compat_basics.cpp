@@ -17,7 +17,9 @@
 #include <ros/ros.h>
 #include <rosgraph_msgs/Log.h>
 
+#include <chrono>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
@@ -107,6 +109,26 @@ TEST_F(CompatLogging, DebugFollowsRosconsoleLevel)
   ASSERT_EQ(messages_.size(), 1u);
   EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::DEBUG);
   EXPECT_EQ(messages_[0].msg, "shown: 2");
+}
+
+TEST_F(CompatLogging, ThrottleLogsFirstCallAndAfterPeriod)
+{
+  auto logger = rclcpp::get_logger("test_logger");
+  rclcpp::Clock clock(RCL_STEADY_TIME);
+  for (int i = 0; i < 3; ++i) {
+    if (i == 2) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    }
+    RCLCPP_WARN_THROTTLE(logger, clock, 1000, "throttled: %d", i);
+  }
+
+  waitForMessages(2);
+
+  // /rosout keeps the order, so a published "throttled: 1" would come second.
+  ASSERT_EQ(messages_.size(), 2u);
+  EXPECT_EQ(messages_[0].level, rosgraph_msgs::Log::WARN);
+  EXPECT_EQ(messages_[0].msg, "throttled: 0");
+  EXPECT_EQ(messages_[1].msg, "throttled: 2");
 }
 
 TEST(CompatDuration, ConstructFromSecondsNanoseconds)
