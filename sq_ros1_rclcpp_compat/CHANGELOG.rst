@@ -2,8 +2,8 @@
 Changelog for package sq_ros1_rclcpp_compat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2026-11-10)
+------------------
 * Make RCLCPP\_*_THROTTLE log on the first call and after each period (`#19 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/19>`_)
 * Log through rosconsole instead of spdlog on ROS 1 (`#18 <https://github.com/seqsense/sq_ros1_rclcpp_compat/issues/18>`_)
 * Contributors: Naotaka Hatao
