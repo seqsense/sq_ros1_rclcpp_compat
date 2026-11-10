@@ -116,7 +116,7 @@ add_message_files(DIRECTORY ${ROS1_MSG_DIR} FILES ${MSG_FILES})
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。このライブラリは `CATKIN_ENABLE_TESTING` が有効なとき (テストビルド時) にのみビルド・export されるが、その際は `${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
+ROS 1 の `catkin_add_gtest` は gtest 標準の `gtest_main` をリンクしないため、本来はテストごとに `main()` を書く必要がある。本パッケージは `main()` を提供し、加えて `ros::Time::init()` を呼ぶ static ライブラリを同梱する。これによりテストコードは追加の boilerplate 無しで `rclcpp::Clock(RCL_ROS_TIME).now()` を使える。`ros::Time::init()` は static initializer で呼ばれるため、`catkin_add_gtest` が別の `main()` をリンクする環境 (Alpine ではシステムの `libgmock_main`) でも呼ばれる。このライブラリは `CATKIN_ENABLE_TESTING` が有効なとき (テストビルド時) にのみビルド・export されるが、その際は `${catkin_LIBRARIES}` 経由で export されるため、本パッケージに依存するテストターゲットは transitive にリンクされる (`target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` を明示する必要はない)。
 
 ROS 2 では `ament_add_gtest` が `gtest_main` を提供するため、上記のような仕組みは必要ない。
 

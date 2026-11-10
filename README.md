@@ -115,7 +115,7 @@ For the following, a header that was `*.h` on ROS 1 was renamed to `*.hpp` on RO
 
 ### `sq_ros1_rclcpp_compat_gtest_main`
 
-ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. It is built and exported through `${catkin_LIBRARIES}` only when `CATKIN_ENABLE_TESTING` is on (i.e. during test builds); when it is, any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed.
+ROS 1's `catkin_add_gtest` does not link a `gtest_main`, so each test would normally need its own `main()`. This package supplies a static lib that provides `main()` and also calls `ros::Time::init()` once, letting tests use `rclcpp::Clock(RCL_ROS_TIME).now()` with no per-file boilerplate. `ros::Time::init()` runs as a static initializer, so it is also called where `catkin_add_gtest` links another `main()` (the system `libgmock_main` on Alpine). It is built and exported through `${catkin_LIBRARIES}` only when `CATKIN_ENABLE_TESTING` is on (i.e. during test builds); when it is, any test target that depends on this package picks it up transitively — no explicit `target_link_libraries(<test> sq_ros1_rclcpp_compat_gtest_main)` needed.
 
 On ROS 2 this mechanism is unnecessary; `ament_add_gtest` already supplies `gtest_main`.
 

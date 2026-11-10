@@ -64,8 +64,14 @@ if($ENV{ROS_VERSION} EQUAL 1)
   # is enabled. Listing it conditionally in catkin_package avoids advertising
   # a non-existent library when CATKIN_ENABLE_TESTING is off.
   set(_COMPAT_EXPORT_LIBS "")
+  # Forces the linker to pull gtest_ros_time_init.cpp out of the static
+  # library even when main() is already provided by another library.
+  set(_GTEST_ROS_TIME_INIT_LINK_OPTION
+      "-Wl,--undefined=sq_ros1_rclcpp_compat_gtest_ros_time_init")
   if(CATKIN_ENABLE_TESTING)
-    list(APPEND _COMPAT_EXPORT_LIBS sq_ros1_rclcpp_compat_gtest_main)
+    list(APPEND _COMPAT_EXPORT_LIBS
+      ${_GTEST_ROS_TIME_INIT_LINK_OPTION}
+      sq_ros1_rclcpp_compat_gtest_main)
   endif()
 
   catkin_package(
@@ -90,13 +96,18 @@ if($ENV{ROS_VERSION} EQUAL 1)
     include_directories(${rosgraph_msgs_INCLUDE_DIRS})
 
     # gtest_main equivalent for downstream tests. catkin_add_gtest does
-    # not link gtest_main, so packages either roll their own main() or
-    # link this library. It also calls ros::Time::init() so tests can
+    # not link gtest_main on Ubuntu, so packages either roll their own main()
+    # or link this library. It also calls ros::Time::init() so tests can
     # use rclcpp::Clock(RCL_ROS_TIME).now() (compat -> ros::Time::now())
-    # without extra setup.
-    add_library(sq_ros1_rclcpp_compat_gtest_main STATIC src/gtest_main.cpp)
+    # without extra setup, even where catkin_add_gtest links another main()
+    # (the system libgmock_main on Alpine).
+    add_library(sq_ros1_rclcpp_compat_gtest_main STATIC
+                src/gtest_main.cpp src/gtest_ros_time_init.cpp)
     target_link_libraries(sq_ros1_rclcpp_compat_gtest_main
                           ${GTEST_LIBRARIES} ${catkin_LIBRARIES})
+    # Same as the option exported by catkin_package(), for the tests below.
+    set_property(TARGET sq_ros1_rclcpp_compat_gtest_main APPEND PROPERTY
+      INTERFACE_LINK_LIBRARIES ${_GTEST_ROS_TIME_INIT_LINK_OPTION})
     install(TARGETS sq_ros1_rclcpp_compat_gtest_main
             ARCHIVE DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION})
 

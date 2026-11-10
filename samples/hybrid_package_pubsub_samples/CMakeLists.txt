@@ -28,7 +28,12 @@ if($ENV{ROS_VERSION} EQUAL 1)
                         ${catkin_LIBRARIES})
   add_dependencies(pointer_subscriber_node ${catkin_EXPORTED_TARGETS})
 
-  install(TARGETS pointer_publisher_node pointer_subscriber_node
+  # The library is shared (catkin's default), so it must be installed for the
+  # node to run.
+  install(TARGETS hybrid_package_common pointer_publisher_node
+                  pointer_subscriber_node
+          ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+          LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
           RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
   if(CATKIN_ENABLE_TESTING)
